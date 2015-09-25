@@ -104,14 +104,14 @@
 						// sample tiled rasters
 						var imageSource = new ImageDataSource("sample_data/tiles/images");
 						var imageProvider = new TileProvider(imageSource, http, Q);
-						polygons = new ImageTileView(imageProvider, webGlView);
-						tileController.addView(polygons);
+						rasters = new ImageTileView(imageProvider, webGlView);
+						tileController.addView(rasters);
 
 						// sample tiled vectors
 						var vectorSource = new GeoJSONDataSource("sample_data/tiles/geom", projection);
 						var vectorProvider = new TileProvider(vectorSource, http, Q);
-						rasters = new VectorTileView(vectorProvider, webGlView, true);
-						tileController.addView(rasters);
+						polygons = new VectorTileView(vectorProvider, webGlView, true);
+						tileController.addView(polygons);
 
 						// start updating tiles and webglview
 						tileController.setMap(map);
