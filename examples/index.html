@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Carte.JS</title>
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=geometry,places,drawing&sensor=false"></script>
+		<script type="text/javascript" src="js/vendor/underscore.min.js"></script>
+		<script type="text/javascript" src="js/vendor/jquery.min.js"></script>
+		<script type="text/javascript" src="js/vendor/three.min.js"></script>
+		<script type="text/javascript" src="js/vendor/earcut.js"></script>
+		<script type="text/javascript" src="js/vendor/q.js"></script>
+
+		<script type="text/javascript" src="../src/geoms/rectangle.js"></script>
+		<script type="text/javascript" src="../src/gis/controllers/tile_controller.js"></script>
+		<script type="text/javascript" src="../src/gis/datasources/geojson_datasource.js"></script>
+		<script type="text/javascript" src="../src/gis/datasources/image_datasource.js"></script>
+		<script type="text/javascript" src="../src/gis/datasources/tile_provider.js"></script>
+		<script type="text/javascript" src="../src/gis/views/image_tile_view.js"></script>
+		<script type="text/javascript" src="../src/gis/views/vector_tile_view.js"></script>
+		<script type="text/javascript" src="../src/graphics/dynamic_spritesheet.js"></script>
+		<script type="text/javascript" src="../src/graphics/object_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/point_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/polygon_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/sprite_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/spritesheet.js"></script>
+		<script type="text/javascript" src="../src/graphics/webgl_view.js"></script>
+		<script type="text/javascript" src="../src/utils/httprequests.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="carte.css">
+	</head>
+	<body>
+		<div id="map"></div>
+		<div id="controls">
+			<input id="sites" name="sites" type="checkbox" value="sites" checked> Sites <br/>
+			<input id="polygons" name="polygons" type="checkbox" value="polygons" checked> Polygons <br/>
+			<input id="rasters" name="rasters" type="checkbox" value="rasters" checked> Rasters <br/>
+		</div>
+		<script type="text/javascript">
+			function createMap(mapId) {
+				var mapPosition = new google.maps.LatLng(12.879721, 121.77401699999996);
+				var mapOptions = {
+					zoom: 6,
+					minZoom: 2,
+					center: mapPosition,
+					mapTypeId: google.maps.MapTypeId.ROADMAP,
+					zoomControlOptions: {
+						position: google.maps.ControlPosition.RIGHT_BOTTOM
+					},
+					panControl: true,
+					panControlOptions: {
+						position: google.maps.ControlPosition.RIGHT_BOTTOM
+					},
+					// zoomControl: false,
+					mapTypeControl: true,
+					mapTypeControlOptions: {
+						position: google.maps.ControlPosition.RIGHT_BOTTOM,
+						style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR
+					},
+					// scaleControl: false,
+					streetViewControl: false,
+					// overviewMapControl: false
+				};
+				return new google.maps.Map(document.getElementById(mapId), mapOptions);
+			}
+
+			function onViewAddedToDom(e) {
+				console.log(e);
+			}
+
+			(function(){
+				var map = createMap("map");
+				var webGlView = new WebGLView().init();
+				var tileController = new TileController(webGlView);
+				var sites = [];
+				var polygons = null;
+				var rasters = null;
+
+				google.maps.event.addListenerOnce(map, "projection_changed", function(){
+					var projection = map.getProjection();
+					webGlView.addEventListener('added_to_dom', function(){
+						// create 100000 random markers around PH area
+						var url = "images/red-circle.png";
+						var image = $("<img />").attr('src', url).on('load', function(){
+							for(var i=0; i<100000; i++) {
+								// var lat = 5+15*Math.random();
+								// var lng = 117+10*Math.random();
+								var lat = -90+180*Math.random();
+								var lng = -180+360*Math.random();
+								var latLng = new google.maps.LatLng(lat, lng)
+								var point = projection.fromLatLngToPoint(latLng);
+								var pointOptions = {};
+								pointOptions.position = {x:point.x, y:point.y, z:0};
+								pointOptions.color = {r:1, g:1, b:1};
+								pointOptions.imageName = url;
+								pointOptions.image = image[0];
+								pointOptions.point = webGlView.addPoint(pointOptions);
+								sites.push(pointOptions);
+							}
+							webGlView.draw();
+						});
+
+						// sample tiled rasters
+						var imageSource = new ImageDataSource("sample_data/tiles/images");
+						var imageProvider = new TileProvider(imageSource, http, Q);
+						polygons = new ImageTileView(imageProvider, webGlView);
+						tileController.addView(polygons);
+
+						// sample tiled vectors
+						var vectorSource = new GeoJSONDataSource("sample_data/tiles/geom", projection);
+						var vectorProvider = new TileProvider(vectorSource, http, Q);
+						rasters = new VectorTileView(vectorProvider, webGlView, true);
+						tileController.addView(rasters);
+
+						// start updating tiles and webglview
+						tileController.setMap(map);
+					});
+					webGlView.setMap(map);
+					addToggleEvents();
+				});
+
+				function addToggleEvents() {
+					$('#sites').change(function() {
+						for(var i=0; i<sites.length; i++) {
+							if($(this).is(":checked")) {
+								sites[i].point = webGlView.addPoint(sites[i]);
+							}else{
+								webGlView.removePoint(sites[i].point);
+							}
+						}
+						webGlView.draw();
+					});
+					$('#polygons').change(function() {
+						if($(this).is(":checked")) {
+							tileController.addView(polygons)
+						}else{
+							tileController.removeView(polygons)
+						}
+					});
+					$('#rasters').change(function() {
+						if($(this).is(":checked")) {
+							tileController.addView(rasters);
+						}else{
+							tileController.removeView(rasters);
+						}
+					});
+				};
+			}());
+		</script>
+	</body>
+</html>

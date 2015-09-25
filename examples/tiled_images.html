@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Carte.JS</title>
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=geometry,places,drawing&sensor=false"></script>
+		<script type="text/javascript" src="js/vendor/underscore.min.js"></script>
+		<script type="text/javascript" src="js/vendor/jquery.min.js"></script>
+		<script type="text/javascript" src="js/vendor/three.min.js"></script>
+		<script type="text/javascript" src="js/vendor/earcut.js"></script>
+		<script type="text/javascript" src="js/vendor/q.js"></script>
+
+		<script type="text/javascript" src="../src/geoms/rectangle.js"></script>
+		<script type="text/javascript" src="../src/gis/controllers/tile_controller.js"></script>
+		<script type="text/javascript" src="../src/gis/datasources/geojson_datasource.js"></script>
+		<script type="text/javascript" src="../src/gis/datasources/image_datasource.js"></script>
+		<script type="text/javascript" src="../src/gis/datasources/tile_provider.js"></script>
+		<script type="text/javascript" src="../src/gis/views/image_tile_view.js"></script>
+		<script type="text/javascript" src="../src/gis/views/vector_tile_view.js"></script>
+		<script type="text/javascript" src="../src/graphics/dynamic_spritesheet.js"></script>
+		<script type="text/javascript" src="../src/graphics/object_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/point_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/polygon_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/sprite_renderer.js"></script>
+		<script type="text/javascript" src="../src/graphics/spritesheet.js"></script>
+		<script type="text/javascript" src="../src/graphics/webgl_view.js"></script>
+		<script type="text/javascript" src="../src/utils/httprequests.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="carte.css">
+	</head>
+	<body>
+		<div id="map"></div>
+		<script type="text/javascript">
+			function createMap(mapId) {
+				var mapPosition = new google.maps.LatLng(12.879721, 121.77401699999996);
+				var mapOptions = {
+					zoom: 6,
+					minZoom: 2,
+					center: mapPosition,
+					mapTypeId: google.maps.MapTypeId.ROADMAP,
+					zoomControlOptions: {
+						position: google.maps.ControlPosition.RIGHT_BOTTOM
+					},
+					panControl: true,
+					panControlOptions: {
+						position: google.maps.ControlPosition.RIGHT_BOTTOM
+					},
+					// zoomControl: false,
+					mapTypeControl: true,
+					mapTypeControlOptions: {
+						position: google.maps.ControlPosition.RIGHT_BOTTOM,
+						style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR
+					},
+					// scaleControl: false,
+					streetViewControl: false,
+					// overviewMapControl: false
+				};
+				return new google.maps.Map(document.getElementById(mapId), mapOptions);
+			}
+
+			(function(){
+				var map = createMap("map");
+				var webGlView = new WebGLView().init();
+				var tileController = new TileController(webGlView);
+				
+				google.maps.event.addListenerOnce(map, "projection_changed", function(){
+					webGlView.addEventListener("added_to_dom", function(){
+						var tileSource = new ImageDataSource("sample_data/tiles/images");
+						var tileProvider = new TileProvider(tileSource, http, Q);
+						tileController.addView(new ImageTileView(tileProvider, webGlView));
+						tileController.setMap(map);
+					});
+					webGlView.setMap(map);
+				});
+			}());
+		</script>
+	</body>
+</html>
