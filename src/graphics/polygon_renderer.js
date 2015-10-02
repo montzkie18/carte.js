@@ -1,7 +1,5 @@
 (function(){
-	var PolygonRenderer = function(webGlView) {
-		this.webGlView = webGlView;
-	};
+	var PolygonRenderer = function() {};
 
 	PolygonRenderer.prototype = new ObjectRenderer();
 	PolygonRenderer.prototype.constructor = ObjectRenderer;
@@ -9,8 +7,8 @@
 	PolygonRenderer.prototype.create = function(options) {
 		options = options || {};
 		var features = options.features || [];
-		var fillColor = options.fillColor || 0x0000FF;
-		var strokeColor = options.strokeColor || 0xFFFFFF;
+		var fillColor = (options.fillColor !== null && options.fillColor !== undefined) ? options.fillColor : 0x0000FF;
+		var strokeColor = (options.strokeColor !== null && options.strokeColor !== undefined) ? options.strokeColor : 0xFFFFFF;
 
 		if(features == null || features.length == 0)
 			return null;
@@ -93,20 +91,7 @@
 			depthTest: false
 		}));
 
-		this.webGlView.addObject(coveragePolygon);
-		this.webGlView.addObject(outlinePolygon);
-
 		return {shape: coveragePolygon, outline: outlinePolygon};
-	};
-
-	PolygonRenderer.prototype.add = function(geometry) {
-		this.webGlView.addObject(geometry.shape);
-		this.webGlView.addObject(geometry.outline);
-	};
-
-	PolygonRenderer.prototype.remove = function(geometry) {
-		this.webGlView.removeObject(geometry.shape);
-		this.webGlView.removeObject(geometry.outline);
 	};
 
 	window.PolygonRenderer = PolygonRenderer;
