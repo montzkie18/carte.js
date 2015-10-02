@@ -21,6 +21,7 @@
 		this.camera = new THREE.OrthographicCamera(0, 255, 0, 255, -3000, 3000);
 		this.camera.position.z = 1000;
 		this.scene = new THREE.Scene();
+		this.sceneMask = new THREE.Scene();
 		this.renderer = new THREE.WebGLRenderer({
 			alpha: true,
 			antialiasing: true,
@@ -29,8 +30,11 @@
 
 		});
 		this.renderer.setPixelRatio(window.devicePixelRatio);
+		this.renderer.autoClear = false;
+		this.context = this.renderer.context;
 		this.animationFrame = null;
 		this.objectRenderers = [];
+		this.numMasks = 0;
 
 		this.update = function() {
 			var map = this.map;
@@ -76,9 +80,37 @@
 
 		this.deferredRender = function() {
 			this.update();
+
+			var context = this.context, renderer = this.renderer;
+			var maskEnabled = this.numMasks > 0;
+
+			if(maskEnabled) {
+				context.colorMask( false, false, false, false );
+				context.depthMask( false );
+
+				context.enable(context.STENCIL_TEST);
+				context.stencilOp(context.REPLACE, context.REPLACE, context.REPLACE);
+				context.stencilFunc(context.ALWAYS, 0, 0xffffffff);
+				context.clearStencil(1);
+
+				this.renderer.render(this.sceneMask, this.camera, null, true);
+
+				context.colorMask(true, true, true, true);
+				context.depthMask(true );
+
+				context.stencilFunc(context.EQUAL, 0, 0xffffffff);  // draw if == 0
+				context.stencilOp(context.KEEP, context.KEEP, context.KEEP);
+			}
+
 			for(var i=0; i<this.objectRenderers.length; i++)
 				this.objectRenderers[i].draw();
+
 			this.renderer.render(this.scene, this.camera);
+
+			if(maskEnabled) {
+				context.disable(context.STENCIL_TEST);
+			}
+
 			this.dispatchEvent({type: 'render'});
 		};
 	};
@@ -100,10 +132,13 @@
 	};
 
 	WebGLView.prototype.init = function() {
-		//!TODO: Remove dependency of renderers from WebGLView
+		//!TODO: Remove dependency of PointRenderer from WebGLView
 		this.pointRenderer = new PointRenderer(this).init();
-		this.polygonRenderer = new PolygonRenderer(this).init();
-		this.spriteRenderer = new SpriteRenderer(this).init();
+		this.scene.add(this.pointRenderer.sceneObject);
+		this.spriteRenderer = new SpriteRenderer().init();
+		this.scene.add(this.spriteRenderer.sceneObject);
+		this.polygonRenderer = new PolygonRenderer().init();
+		// add them to an array so we can draw/update them all later
 		this.objectRenderers.push(this.pointRenderer);
 		this.objectRenderers.push(this.polygonRenderer);
 		this.objectRenderers.push(this.spriteRenderer);
@@ -144,19 +179,48 @@
 	};
 
 	WebGLView.prototype.createGeometry = function(options) {
-		return this.polygonRenderer.create(options);
+		var geometry = this.polygonRenderer.create(options, this.scene);
+		this.addGeometry(geometry);
+		return geometry;
 	};
 
 	WebGLView.prototype.addGeometry = function(geometry) {
-		this.polygonRenderer.add(geometry);
+		this.scene.add(geometry.shape);
+		this.scene.add(geometry.outline);
 	};
 
 	WebGLView.prototype.removeGeometry = function(geometry) {
-		this.polygonRenderer.remove(geometry);
+		this.scene.remove(geometry.shape);
+		this.scene.remove(geometry.outline);
 	};
 
 	WebGLView.prototype.destroyGeometry = function(geometry) {
-		this.polygonRenderer.destroy(geometry);
+		delete geometry.shape;
+		delete geometry.outline;
+	};
+
+	WebGLView.prototype.createMask = function(options) {
+		var mask = this.polygonRenderer.create(options);
+		this.addMask(mask);
+		this.numMasks++;
+		return mask;
+	};
+
+	WebGLView.prototype.addMask = function(geometry) {
+		this.sceneMask.add(geometry.shape);
+		this.sceneMask.add(geometry.outline);
+		this.numMasks++;
+	};
+
+	WebGLView.prototype.removeMask = function(geometry) {
+		this.sceneMask.remove(geometry.shape);
+		this.sceneMask.remove(geometry.outline);
+		this.numMasks--;
+	};
+
+	WebGLView.prototype.destroyMask = function(geometry) {
+		delete geometry.shape;
+		delete geometry.outline;
 	};
 
 	window.WebGLView = WebGLView;

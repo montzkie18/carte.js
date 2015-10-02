@@ -13,11 +13,12 @@
 
 	var fshader = (function () {/*
 		uniform sampler2D tex1;
+		uniform float alpha;
 		varying vec2 vUv;
 		varying vec4 vTile;
 		void main() {
 			vec2 uv = vTile.xy + vTile.zw * vUv;
-			gl_FragColor = texture2D(tex1, uv);
+			gl_FragColor = texture2D(tex1, uv) * vec4(1, 1, 1, alpha);
 		}
 	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
 
@@ -29,12 +30,12 @@
 	var UV_INTERVAL = 2*4; // 2 uv per vertex, 4 vertex per sprite
 	var TILE_INTERVAL = 4*4; // offset(x,y) + size(width, heigt) per vertex, 4 vertex per sprite
 
-	var SpriteRenderer = function(webGlView){
-		this.webGlView = webGlView;
+	var SpriteRenderer = function(){
 		this.minIndex = MAX_COUNT;
 		this.maxIndex = 0;
 		this.index = 0;
 		this.sprites = [];
+		this.opacity = 0.8;
 	};
 
 	SpriteRenderer.prototype.init = function() {
@@ -64,13 +65,14 @@
 		this.spriteSheet = new DynamicSpriteSheet(4096, 4096);
 		this.material = new THREE.ShaderMaterial( {
 			uniforms: {
-				tex1: { type: "t", value: this.spriteSheet.texture }
+				tex1: { type: "t", value: this.spriteSheet.texture },
+				alpha: { type: "f", value: this.opacity }
 			},
 			vertexShader: vshader,
 			fragmentShader: fshader
 		});
-		this.mesh = new THREE.Mesh(this.geometry, this.material);
-		this.webGlView.addObject(this.mesh);
+
+		this.sceneObject = new THREE.Mesh(this.geometry, this.material);
 
 		return this;
 	};

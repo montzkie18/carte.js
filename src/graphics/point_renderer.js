@@ -79,9 +79,8 @@
 			depthTest: false
 		});
 
-		this.particles = new THREE.Points(this.geometry, this.material);
-		this.webGlView.addObject(this.particles);
-		this.raycastObjects = [this.particles];
+		this.sceneObject = new THREE.Points(this.geometry, this.material);
+		this.raycastObjects = [this.sceneObject];
 		this.addEventListeners();
 
 		return this;
