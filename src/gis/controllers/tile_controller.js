@@ -14,7 +14,7 @@
 		this.bounds = new Rectangle(0, 0, 0, 0);
 		this.zoom = 0;
 		this.minZoom = 0;
-		this.maxZoom = 10;
+		this.maxZoom = 12;
 		this.enabled = false;
 		this.views = [];
 	};

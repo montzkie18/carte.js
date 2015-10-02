@@ -10,7 +10,7 @@
 		options = options || {};
 		var features = options.features || [];
 		var fillColor = options.fillColor || 0x0000FF;
-		var strokeColor = options.strokeColor || 0x000000;
+		var strokeColor = options.strokeColor || 0xFFFFFF;
 
 		if(features == null || features.length == 0)
 			return null;
@@ -24,48 +24,73 @@
 			var feature = features[i];
 			if(feature.length == 0) continue;
 
-			var points = [];
+			// iterate every feature which should contain a list of 
+			// [array of polygons [outer loop], [inner loop 1], ..., [inner loop n]]
 			for(var j=0; j<feature.length; j++){
-				var point = {x: feature[j][0], y: feature[j][1]};
-				points.push(point.x);
-				points.push(point.y);
+				var polygon  = feature[j];
+				for(var p=0; p<polygon.length; p++) {
+					var loop = polygon[p];
+					var points = [], holeIndices = [], holeIndex = 0;
 
-				var vertex = new THREE.Vector3(point.x, point.y, 1001);
-				geometry.vertices.push(vertex);
+					for(var l=0; l<loop.length; l++) {
+						var coordinate = loop[l];
+						var point = {x: coordinate[0], y: coordinate[1]};
+						points.push(point.x);
+						points.push(point.y);
 
-				if(j>0) {
-					var ppoint = {x: feature[j-1][0], y: feature[j-1][1]};
-					var v1 = new THREE.Vector3(ppoint.x, ppoint.y, 1000);
-					outline.vertices.push(v1);
+						var vertex = new THREE.Vector3(point.x, point.y, 1001);
+						geometry.vertices.push(vertex);
 
-					var v2 = new THREE.Vector3(point.x, point.y, 1000);
-					outline.vertices.push(v2);
-				}
+						var vertex1 = new THREE.Vector3(point.x, point.y, 1);
+						outline.vertices.push(vertex1);
+
+						if(l == loop.length-1) {
+							var coord0 = loop[0];
+							var point0 = {x: coord0[0], y: coord0[1]};
+							var vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
+							outline.vertices.push(vertex0);
+						}else{
+							var coord0 = loop[l+1];
+							var point0 = {x: coord0[0], y: coord0[1]};
+							var vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
+							outline.vertices.push(vertex0);
+						}
+					}
+
+					if(p>0) holeIndices.push(holeIndex);
+					holeIndex += loop.length;
+
+					var tris = earcut(points, null, 2);
+					for(var k=0; k<tris.length; k+=3) {
+						// 2-1-0 means face up
+						var face = new THREE.Face3(
+							tris[k+2] + vertexOffset, 
+							tris[k+1] + vertexOffset, 
+							tris[k+0] + vertexOffset
+						);
+						geometry.faces.push(face);
+					}
+					vertexOffset = geometry.vertices.length;
+					numPolygons++;
+				};	
 			}
-
-			var tris = earcut(points);
-			for(var k=0; k<tris.length; k+=3) {
-				// 2-1-0 means face up
-				var face = new THREE.Face3(
-					tris[k+2] + vertexOffset, 
-					tris[k+1] + vertexOffset, 
-					tris[k+0] + vertexOffset
-				);
-				geometry.faces.push(face);
-			}
-			
-			vertexOffset = geometry.vertices.length;
-			numPolygons++;
-			i++;
 		}
 
 		var coveragePolygon = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-			color: fillColor, opacity: 1.0
+			color: fillColor,
+			opacity: 0.25, 
+			transparent: true,
+			depthWrite: false,
+			depthTest: false
 		}));
 
 		var outlinePolygon = new THREE.LineSegments(outline, new THREE.LineBasicMaterial({
 			color: strokeColor,
-			linewidth: 2
+			linewidth: 2,
+			opacity: 0.25, 
+			transparent: true,
+			depthWrite: false,
+			depthTest: false
 		}));
 
 		this.webGlView.addObject(coveragePolygon);

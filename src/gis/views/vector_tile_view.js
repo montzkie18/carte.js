@@ -27,6 +27,10 @@
 		this.tileSize = tileSize;
 	};
 
+	VectorTileView.prototype.setTileSize = function(tileSize) {
+		this.tileSize = tileSize;
+	};
+
 	VectorTileView.prototype.showTiles = function(ulx, uly, lrx, lry, zoom) {
 		for(var column=ulx; column<=lrx; column++) {
 			for(var row=uly; row<=lry; row++) {
@@ -38,6 +42,7 @@
 
 	VectorTileView.prototype.showTile = function(x, y, z) {
 		var url = this.tileProvider.getTileUrl(x, y, z);
+		if(this.shownTiles[url]) return;
 		this.shownTiles[url] = true;
 
 		if(this.tiles[url]) {
@@ -75,6 +80,8 @@
 
 		if(this.tiles[url] && this.tiles[url].geometry) {
 			this.webGlView.removeGeometry(this.tiles[url].geometry);
+			delete this.tiles[url].geometry;
+			this.tiles[url].geometry = null;
 		}
 	};
 
