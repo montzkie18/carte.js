@@ -21,18 +21,30 @@
 	};
 
 	GeoJSONDataSource.prototype._parseFeature = function(feature) {
-		var points = [];
+		var polygons = [];
 		if(feature.geometry.type == "Polygon") {
-			var coordinates = feature.geometry.coordinates;
-			for(var i=0; i<coordinates.length; i++) {
-				for(var j=0; j<coordinates[i].length; j++) {
-					var latLng = new google.maps.LatLng(coordinates[i][j][1], coordinates[i][j][0]);
-					var point = this.projection.fromLatLngToPoint(latLng);
-					points.push([point.x, point.y]);
-				}
-			}
+			polygons.push(this._parsePolygon(feature.geometry.coordinates));
 		}
-		return points;
+		else if(feature.geometry.type == "MultiPolygon") {
+			var coordinates = feature.geometry.coordinates;
+			for(var i=0; i<coordinates.length; i++)
+				polygons.push(this._parsePolygon(coordinates[i]));
+		}
+		return polygons;
+	};
+
+	GeoJSONDataSource.prototype._parsePolygon = function(coordinates) {
+		var polygon = [];
+		for(var i=0; i<coordinates.length; i++) {
+			var points = [];
+			for(var j=0; j<coordinates[i].length; j++) {
+				var latLng = new google.maps.LatLng(coordinates[i][j][1], coordinates[i][j][0]);
+				var point = this.projection.fromLatLngToPoint(latLng);
+				points.push([point.x, point.y]);
+			}
+			polygon.push(points);
+		}
+		return polygon;
 	};
 
 	window.GeoJSONDataSource = GeoJSONDataSource;

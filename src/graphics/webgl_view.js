@@ -23,8 +23,10 @@
 		this.scene = new THREE.Scene();
 		this.renderer = new THREE.WebGLRenderer({
 			alpha: true,
+			antialiasing: true,
 			clearColor: 0x000000,
 			clearAlpha: 0
+
 		});
 		this.renderer.setPixelRatio(window.devicePixelRatio);
 		this.animationFrame = null;
