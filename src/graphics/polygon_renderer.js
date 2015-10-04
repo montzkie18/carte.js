@@ -10,7 +10,7 @@
 		var fillColor = (options.fillColor !== null && options.fillColor !== undefined) ? options.fillColor : 0x0000FF;
 		var strokeColor = (options.strokeColor !== null && options.strokeColor !== undefined) ? options.strokeColor : 0xFFFFFF;
 
-		if(features == null || features.length == 0)
+		if(features === null || features.length === 0)
 			return null;
 
 		var geometry = new THREE.Geometry();
@@ -20,7 +20,7 @@
 
 		for(var i=0; i<features.length; i++){
 			var feature = features[i];
-			if(feature.length == 0) continue;
+			if(feature.length === 0) continue;
 
 			// iterate every feature which should contain a list of 
 			// [array of polygons [outer loop], [inner loop 1], ..., [inner loop n]]
@@ -42,15 +42,16 @@
 						var vertex1 = new THREE.Vector3(point.x, point.y, 1);
 						outline.vertices.push(vertex1);
 
+						var coord0, point0, vertex0;
 						if(l == loop.length-1) {
-							var coord0 = loop[0];
-							var point0 = {x: coord0[0], y: coord0[1]};
-							var vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
+							coord0 = loop[0];
+							point0 = {x: coord0[0], y: coord0[1]};
+							vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
 							outline.vertices.push(vertex0);
 						}else{
-							var coord0 = loop[l+1];
-							var point0 = {x: coord0[0], y: coord0[1]};
-							var vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
+							coord0 = loop[l+1];
+							point0 = {x: coord0[0], y: coord0[1]};
+							vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
 							outline.vertices.push(vertex0);
 						}
 					}
@@ -70,7 +71,7 @@
 					}
 					vertexOffset = geometry.vertices.length;
 					numPolygons++;
-				};	
+				}	
 			}
 		}
 

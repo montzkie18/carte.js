@@ -138,7 +138,7 @@
 				console.log("[PointRenderer] SpriteSheet already full.");
 			}
 		}
-		var spriteRect = sprite != null ? sprite.normalRect : {x:0, y:0, width:0, height:0};
+		var spriteRect = sprite !== null ? sprite.normalRect : {x:0, y:0, width:0, height:0};
 		this.tiles[this.index*4 + 0] = spriteRect.x;
 		this.tiles[this.index*4 + 1] = spriteRect.y;
 		this.tiles[this.index*4 + 2] = spriteRect.width;
@@ -202,7 +202,7 @@
 		// we hit something
 		if(intersection) {
 			// first time to hover something
-			if(this.hoveredMarker == null) {
+			if(this.hoveredMarker === null) {
 				this.hoveredMarker = this.markers[intersection.index];
 				this.hoveredMarker.dispatchEvent({type: 'mouseover'});
 			}
@@ -216,7 +216,7 @@
 		// there's nothing under the mouse
 		else {
 			// we lost our object. bye bye
-			if(this.hoveredMarker != null) {
+			if(this.hoveredMarker !== null) {
 				this.hoveredMarker.dispatchEvent({type: 'mouseout'});
 				this.hoveredMarker = null;
 			}

@@ -9,11 +9,11 @@
 	GeoJSONDataSource.prototype.parse = function(data) {
 		var featureCollection = [];
 		if(data) {
-			if(data["type"] == "FeatureCollection") {
-				var features = data["features"];
+			if(data.type == "FeatureCollection") {
+				var features = data.features;
 				for(var i=0; i<features.length; i++)
 					featureCollection.push(this._parseFeature(features[i]));
-			}else if(data["type"] == "Feature") {
+			}else if(data.type == "Feature") {
 				featureCollection.push(this._parseFeature(data));
 			}
 		}

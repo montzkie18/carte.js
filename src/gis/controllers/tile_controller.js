@@ -7,7 +7,7 @@
 		var pixelCoordinate = {x: worldCoordinate.x * Math.pow(2, zoom), y: worldCoordinate.y * Math.pow(2, zoom)};
 		var tileCoordinate = {x: Math.floor(pixelCoordinate.x / MERCATOR_RANGE), y: Math.floor(pixelCoordinate.y / MERCATOR_RANGE)};
 		return tileCoordinate;
-	};
+	}
 
 	var TileController = function(webGlView) {
 		this.webGlView = webGlView;
@@ -61,8 +61,10 @@
 
 	TileController.prototype.hasChangedBounds = function(visibleBounds) {
 		var currentBounds = this.bounds;
-		return currentBounds.ulx != visibleBounds.ulx || currentBounds.uly != visibleBounds.uly
-			|| currentBounds.lrx != visibleBounds.lrx || currentBounds.lry != visibleBounds.lry;
+		return currentBounds.ulx != visibleBounds.ulx || 
+			currentBounds.uly != visibleBounds.uly || 
+			currentBounds.lrx != visibleBounds.lrx || 
+			currentBounds.lry != visibleBounds.lry;
 	};
 
 	TileController.prototype.update = function() {
@@ -73,13 +75,14 @@
 			boundsNwLatLng = new google.maps.LatLng(boundsNeLatLng.lat(), boundsSwLatLng.lng()),
 			boundsSeLatLng = new google.maps.LatLng(boundsSwLatLng.lat(), boundsNeLatLng.lng()),
 			zoom = map.getZoom(),
-			zoom = Math.max(this.minZoom, zoom),
-			zoom = Math.min(this.maxZoom, zoom),
 			projection = map.getProjection(),
 			tileCoordinateNw = convertPointToTile(boundsNwLatLng, zoom, projection),
 			tileCoordinateSe = convertPointToTile(boundsSeLatLng, zoom, projection),
 			visibleBounds = new Rectangle(tileCoordinateNw.x, tileCoordinateNw.y, 
 				tileCoordinateSe.x-tileCoordinateNw.x, tileCoordinateSe.y-tileCoordinateNw.y);
+
+		zoom = Math.max(this.minZoom, zoom);
+		zoom = Math.min(this.maxZoom, zoom);
 
 		var currentBounds = this.bounds;
 		var x = Math.min(currentBounds.ulx, visibleBounds.ulx),

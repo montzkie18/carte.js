@@ -18,11 +18,12 @@
 	 * Sample implementation for lightmaps: http://www.blackpawn.com/texts/lightmaps/
 	 */
 	SpriteNode.prototype.insert = function(name, image) {
-		if(this.image != null) {
+		var newNode = null;
+		if(this.image !== null) {
 			// this already contains an image so let's check it's children
 			if(this.child.length > 0) {
-				var newNode = this.child[0].insert(name, image);
-				if(newNode != null) return newNode;
+				newNode = this.child[0].insert(name, image);
+				if(newNode !== null) return newNode;
 				return this.child[1].insert(name, image);
 			}
 			// this is a leaf node and already contains an image that 'just fits'
@@ -36,8 +37,8 @@
 				}
 
 				if(this.child.length > 0) {
-					var newNode = this.child[0].insert(name, image);
-					if(newNode != null) return newNode;
+					newNode = this.child[0].insert(name, image);
+					if(newNode !== null) return newNode;
 					return this.child[1].insert(name, image);
 				} else {
 					var rect = this.rect;
@@ -67,14 +68,14 @@
 		if(this.name == name) return this;
 		if(this.child.length > 0) {
 			var node = this.child[0].get(name);
-			if(node != null) return node;
+			if(node !== null) return node;
 			return this.child[1].get(name);
 		}
 		return null;
 	};
 
 	SpriteNode.prototype.delete = function(name) {
-		var node = this.get(name)
+		var node = this.get(name);
 		if(node) node.clear();
 		return node;
 	};
@@ -100,7 +101,7 @@
 		this.pnode.computeNormal(width, height);
 	};
 
-	DynamicSpriteSheet.prototype = new THREE.EventDispatcher;
+	DynamicSpriteSheet.prototype = new THREE.EventDispatcher();
 	DynamicSpriteSheet.prototype.constructor = DynamicSpriteSheet;
 
 	DynamicSpriteSheet.prototype.get = function(name) {
@@ -108,7 +109,7 @@
 	};
 
 	DynamicSpriteSheet.prototype.add = function(name, image) {
-		if(this.get(name) != null) return null;
+		if(this.get(name) !== null) return null;
 		var node = this.pnode.insert(name, image);
 		if(node) {
 			var rect = node.rect;

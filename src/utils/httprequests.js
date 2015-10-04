@@ -14,11 +14,11 @@
 					deferred.resolve({data:data, status:status, xhr:xhr});
 				})
 				.error(function(xhr, status, error){
-					deferred.reject({xhr:xhr, status:status, error:error});;
+					deferred.reject({xhr:xhr, status:status, error:error});
 				});
 		}
 		return deferred.promise;
-	}
+	};
 
 	window.http = http;
 }());

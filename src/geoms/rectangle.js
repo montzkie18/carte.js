@@ -1,4 +1,4 @@
-(function(){
+(function(pkg){
 	var Rectangle = function(x, y, width, height) {
 		this.x = x;
 		this.y = y;
@@ -15,7 +15,8 @@
 	};
 
 	Rectangle.prototype.containsRect = function(rect) {
-		this.containsPoint(rect.x, rect.y) && this.containsPoint(rect.x+rect.width, rect.y+rect.height);
+		return this.containsPoint(rect.x, rect.y) && 
+			this.containsPoint(rect.x+rect.width, rect.y+rect.height);
 	};
 
 	Rectangle.prototype.containsDimensions = function(width, height) {
@@ -31,4 +32,4 @@
 	};
 
 	window.Rectangle = Rectangle;
-}());
+}(carte));

@@ -1,10 +1,10 @@
 (function(){
 	var Sprite = function(data) {
-		this.name = data["name"];
-		var x = data["x"],
-			y = data["y"],
-			width = data["width"],
-			height = data["height"];
+		this.name = data.name;
+		var x = data.x,
+			y = data.y,
+			width = data.width,
+			height = data.height;
 		this.rect = new Rectangle(x, y, width, height);
 	};
 
