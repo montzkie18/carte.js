@@ -1,4 +1,4 @@
-(function(pkg){
+(function(){
 	var Rectangle = function(x, y, width, height) {
 		this.x = x;
 		this.y = y;
@@ -32,4 +32,4 @@
 	};
 
 	window.Rectangle = Rectangle;
-}(carte));
+}());

@@ -105,7 +105,7 @@
 			for(var i=0; i<this.objectRenderers.length; i++)
 				this.objectRenderers[i].draw();
 
-			this.renderer.render(this.scene, this.camera);
+			this.renderer.render(this.scene, this.camera, null, !maskEnabled);
 
 			if(maskEnabled) {
 				context.disable(context.STENCIL_TEST);
@@ -180,7 +180,9 @@
 
 	WebGLView.prototype.createGeometry = function(options) {
 		var geometry = this.polygonRenderer.create(options, this.scene);
-		this.addGeometry(geometry);
+		if(geometry !== null) {
+			this.addGeometry(geometry);
+		}
 		return geometry;
 	};
 
@@ -201,8 +203,10 @@
 
 	WebGLView.prototype.createMask = function(options) {
 		var mask = this.polygonRenderer.create(options);
-		this.addMask(mask);
-		this.numMasks++;
+		if(mask !== null) {
+			this.addMask(mask);
+			this.numMasks++;
+		}
 		return mask;
 	};
 

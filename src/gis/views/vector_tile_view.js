@@ -42,6 +42,7 @@
 
 	VectorTileView.prototype.showTile = function(x, y, z) {
 		var url = this.tileProvider.getTileUrl(x, y, z);
+		// console.log("Showing tile: " + url);
 		if(this.shownTiles[url]) return;
 		this.shownTiles[url] = true;
 
@@ -69,13 +70,14 @@
 						self.webGlView.draw();
 					}
 				}, function(reason){
-					//console.log(reason);
+					console.log(reason);
 				});
 		}
 	};
 
 	VectorTileView.prototype.hideTile = function(x, y, z) {
 		var url = this.tileProvider.getTileUrl(x, y, z);
+		// console.log("Hiding tile: " + url);
 		this.shownTiles[url] = false;
 
 		if(this.tiles[url] && this.tiles[url].geometry) {

@@ -109,6 +109,7 @@
 	};
 
 	DynamicSpriteSheet.prototype.add = function(name, image) {
+		if(image === undefined || image === null) return null;
 		if(this.get(name) !== null) return null;
 		var node = this.pnode.insert(name, image);
 		if(node) {
