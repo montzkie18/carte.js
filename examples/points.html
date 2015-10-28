@@ -47,7 +47,7 @@
 
 			(function(){
 				var map = createMap("map");
-				var webGlView = new WebGLView().init();
+				var webGlView = new WebGLView(map).init();
 				var infoWindow = new google.maps.InfoWindow({ content : "" });
 
 				function handleMarkerClick(event) {

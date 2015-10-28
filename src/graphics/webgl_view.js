@@ -17,7 +17,8 @@
 		return props[0];
 	})();
 
-	var WebGLView = function() {
+	var WebGLView = function(map) {
+		this._map = map;
 		this.camera = new THREE.OrthographicCamera(0, 255, 0, 255, -3000, 3000);
 		this.camera.position.z = 1000;
 		this.scene = new THREE.Scene();
@@ -31,6 +32,7 @@
 		});
 		this.renderer.setPixelRatio(window.devicePixelRatio);
 		this.renderer.autoClear = false;
+		this.renderer.domElement.style["pointer-events"] = 'none';
 		this.context = this.renderer.context;
 		this.animationFrame = null;
 		this.objectRenderers = [];
@@ -118,6 +120,10 @@
 	WebGLView.prototype = _.extend(new google.maps.OverlayView(), new THREE.EventDispatcher());
 	WebGLView.prototype.constructor = WebGLView;
 
+	WebGLView.prototype.getMap = function() {
+		return this._map;
+	};
+
 	WebGLView.prototype.onAdd = function() {
 		this.getPanes().overlayLayer.appendChild(this.renderer.domElement);
 		this.addEventListeners();
@@ -138,10 +144,12 @@
 		this.spriteRenderer = new SpriteRenderer().init();
 		this.scene.add(this.spriteRenderer.sceneObject);
 		this.polygonRenderer = new PolygonRenderer().init();
+		this.lineRenderer = new LineRenderer().init();
 		// add them to an array so we can draw/update them all later
 		this.objectRenderers.push(this.pointRenderer);
 		this.objectRenderers.push(this.polygonRenderer);
 		this.objectRenderers.push(this.spriteRenderer);
+		this.objectRenderers.push(this.lineRenderer);
 		return this;
 	};
 
@@ -179,7 +187,7 @@
 	};
 
 	WebGLView.prototype.createGeometry = function(options) {
-		var geometry = this.polygonRenderer.create(options, this.scene);
+		var geometry = this.polygonRenderer.create(options);
 		if(geometry !== null) {
 			this.addGeometry(geometry);
 		}
@@ -201,11 +209,30 @@
 		delete geometry.outline;
 	};
 
+	WebGLView.prototype.createLine = function(options) {
+		var geometry = this.lineRenderer.create(options);
+		if(geometry !== null) {
+			this.addLine(geometry);
+		}
+		return geometry;
+	};
+
+	WebGLView.prototype.addLine = function(line) {
+		this.scene.add(line);
+	};
+
+	WebGLView.removeLine = function(line) {
+		this.scene.remove(line);
+	};
+
+	WebGLView.destroyLine = function(line) {
+		delete line;
+	};
+
 	WebGLView.prototype.createMask = function(options) {
 		var mask = this.polygonRenderer.create(options);
 		if(mask !== null) {
 			this.addMask(mask);
-			this.numMasks++;
 		}
 		return mask;
 	};
@@ -213,13 +240,13 @@
 	WebGLView.prototype.addMask = function(geometry) {
 		this.sceneMask.add(geometry.shape);
 		this.sceneMask.add(geometry.outline);
-		this.numMasks++;
+		this.numMasks+=1;
 	};
 
 	WebGLView.prototype.removeMask = function(geometry) {
 		this.sceneMask.remove(geometry.shape);
 		this.sceneMask.remove(geometry.outline);
-		this.numMasks--;
+		this.numMasks-=1;
 	};
 
 	WebGLView.prototype.destroyMask = function(geometry) {

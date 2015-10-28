@@ -87,8 +87,9 @@
 	};
 
 	PointRenderer.prototype.addEventListeners = function() {
-		document.addEventListener('mousemove', this.handleDocumentMouseMove.bind(this), false);
-		document.addEventListener('click', this.handleDocumentMouseClick.bind(this), false);
+		var map = this.webGlView.getMap();
+		google.maps.event.addListener(map, 'mousemove', this.handleDocumentMouseMove.bind(this));
+		google.maps.event.addListener(map, 'click', this.handleDocumentMouseClick.bind(this));
 	};
 
 	PointRenderer.prototype.handleDocumentMouseMove = function(event) {
@@ -191,8 +192,13 @@
 	};
 
 	PointRenderer.prototype.update = function(event) {
-		this.mouse.x = (event.clientX / this.webGlView.width) * 2 - 1;
-		this.mouse.y = -(event.clientY / this.webGlView.height) * 2 + 1;
+		if(event.clientX !== undefined && event.clientY !== undefined) {
+			this.mouse.x = (event.clientX / this.webGlView.width) * 2 - 1;
+			this.mouse.y = -(event.clientY / this.webGlView.height) * 2 + 1;
+		}else if(event.pixel) {
+			this.mouse.x = (event.pixel.x / this.webGlView.width) * 2 - 1;
+			this.mouse.y = -(event.pixel.y / this.webGlView.height) * 2 + 1;
+		}
 
 		// check if we hit any of the points in the particle system
 		this.raycaster.params.Points.threshold = 16*1/Math.pow(2, this.webGlView.scale);

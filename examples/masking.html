@@ -47,7 +47,7 @@
 
 			(function(){
 				var map = createMap("map");
-				var webGlView = new WebGLView().init();
+				var webGlView = new WebGLView(map).init();
 				var tileController = new TileController(webGlView);
 				var mask = null;
 				
@@ -90,7 +90,7 @@
 							.then(function(response){
 								var features = new GeoJSONDataSource("", projection).parse(response.data);
 								var options = {};
-								options.features = features;
+								options.features = features.polygons;
 								options.fillColor = 0x000000;
 								options.strokeColor = 0x000000;
 								mask = webGlView.createMask(options);
