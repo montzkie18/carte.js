@@ -48,6 +48,27 @@
 			(function(){
 				var map = createMap("map");
 				var webGlView = new WebGLView().init();
+				var infoWindow = new google.maps.InfoWindow({ content : "" });
+
+				function handleMarkerClick(event) {
+					var clickedMarker = event.target;
+					map.setCenter(clickedMarker.options.latLng);
+				};
+
+				function handleMarkerHover(event) {
+					var hoveredMarker = event.target;
+					var data = hoveredMarker.options;
+					var content = "<div>Site ID: " + data.id + "</div>";
+					content += "<div>Latitude: " + data.latLng.lat() + "</div>";
+					content += "<div>Longitude: " + data.latLng.lng() + "</div>";
+					infoWindow.setContent(content);
+					infoWindow.setPosition(data.latLng);
+					infoWindow.open(map);
+				};
+
+				function handleMarkerOut(event) {
+					infoWindow.close();
+				};
 
 				google.maps.event.addListenerOnce(map, "projection_changed", function(){
 					var projection = map.getProjection();
@@ -64,7 +85,13 @@
 								pointOptions.color = {r:1, g:1, b:1};
 								pointOptions.imageName = url;
 								pointOptions.image = image[0];
-								webGlView.addPoint(pointOptions);
+								// extra payload for figuring out which marker we clicked later
+								pointOptions.latLng = latLng;
+								pointOptions.id = i;
+								var marker = webGlView.addPoint(pointOptions)
+								marker.addEventListener("mouseover", handleMarkerHover);
+								marker.addEventListener("mouseout", handleMarkerOut);
+								marker.addEventListener("click", handleMarkerClick);
 							}
 							webGlView.draw();
 						});

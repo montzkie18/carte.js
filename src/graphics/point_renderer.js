@@ -147,6 +147,7 @@
 		this.minIndex = Math.min(this.minIndex, this.index);
 		this.maxIndex = Math.max(this.maxIndex, this.index);
 		var marker = this.markers[this.index] || this._createMarker(this.index);
+		marker.options = options;
 		this.index++;
 		return marker;
 	};
@@ -212,6 +213,8 @@
 				this.hoveredMarker = this.markers[intersection.index];
 				this.hoveredMarker.dispatchEvent({type: 'mouseover'});
 			}
+			if(this.webGlView && this.webGlView.map)
+				this.webGlView.map.setOptions({draggableCursor:'pointer'});
 		}
 		// there's nothing under the mouse
 		else {
@@ -220,6 +223,8 @@
 				this.hoveredMarker.dispatchEvent({type: 'mouseout'});
 				this.hoveredMarker = null;
 			}
+			if(this.webGlView && this.webGlView.map)
+				this.webGlView.map.setOptions({draggableCursor:null});
 		}
 	};
 
