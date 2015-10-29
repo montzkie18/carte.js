@@ -1,26 +1,24 @@
 (function(){
-	var vshader = (function () {/*
-		attribute vec4 tile;
-		varying vec2 vUv;
-		varying vec4 vTile;
-		void main() {
-			vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-			gl_Position = projectionMatrix * mvPosition;
-			vUv = uv;
-			vTile = tile;
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+	var vshader = "" +
+		"attribute vec4 tile;" +
+		"varying vec2 vUv;" +
+		"varying vec4 vTile;" +
+		"void main() {" +
+		"	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);" +
+		"	gl_Position = projectionMatrix * mvPosition;" +
+		"	vUv = uv;" +
+		"	vTile = tile;" +
+		"}";
 
-	var fshader = (function () {/*
-		uniform sampler2D tex1;
-		uniform float alpha;
-		varying vec2 vUv;
-		varying vec4 vTile;
-		void main() {
-			vec2 uv = vTile.xy + vTile.zw * vUv;
-			gl_FragColor = texture2D(tex1, uv) * vec4(1, 1, 1, alpha);
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+	var fshader = "" +
+		"uniform sampler2D tex1;" +
+		"uniform float alpha;" +
+		"varying vec2 vUv;" +
+		"varying vec4 vTile;" +
+		"void main() {" +
+		"	vec2 uv = vTile.xy + vTile.zw * vUv;" +
+		"	gl_FragColor = texture2D(tex1, uv) * vec4(1, 1, 1, alpha);" +
+		"}";
 
 	var MAX_COUNT = Math.pow(2,32) - 1;
 	var START_VALUE = -99999.0;

@@ -1,30 +1,26 @@
 (function(){
-	var vshader = (function () {/*
-		uniform float pointSize;
-		attribute vec4 tile;
-		varying vec4 vTile;
-		varying vec3 vColor;
+	var vshader = "" +
+		"uniform float pointSize;" +
+		"attribute vec4 tile;" +
+		"varying vec4 vTile;" +
+		"varying vec3 vColor;" +
+		"void main() {" +
+		"	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);" +
+		"	gl_Position = projectionMatrix * mvPosition;" +
+		"	gl_PointSize = pointSize;" +
+		"	vTile = tile;" +
+		"	vColor = color;" +
+		"}";
 
-		void main() {
-			vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-			gl_Position = projectionMatrix * mvPosition;
-			gl_PointSize = pointSize;
-			vTile = tile;
-			vColor = color;
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
-
-	var fshader = (function () {/*
-		uniform sampler2D tex1;
-		uniform vec2 spriteSize;
-		varying vec4 vTile;
-		varying vec3 vColor;
-
-		void main() {
-			vec2 tileUV = vTile.xy + vTile.zw * gl_PointCoord;
-			gl_FragColor = texture2D(tex1, tileUV) * vec4(vColor.rgb, 1.0);
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+	var fshader = "" +
+		"uniform sampler2D tex1;" +
+		"uniform vec2 spriteSize;" +
+		"varying vec4 vTile;" +
+		"varying vec3 vColor;" +
+		"void main() {" +
+		"	vec2 tileUV = vTile.xy + vTile.zw * gl_PointCoord;" +
+		"	gl_FragColor = texture2D(tex1, tileUV) * vec4(vColor.rgb, 1.0);" +
+		"}";
 
 	var MAX_COUNT = Math.pow(2,32) - 1;
 	var START_VALUE = -99999.0;

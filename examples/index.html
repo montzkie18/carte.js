@@ -95,7 +95,7 @@
 						// sample tiled vectors
 						var vectorSource = new GeoJSONDataSource("sample_data/tiles/geom", projection);
 						var vectorProvider = new TileProvider(vectorSource, http, Q);
-						rasters = new VectorTileView(vectorProvider, webGlView, true);
+						rasters = new VectorTileView(vectorProvider, webGlView, null, true);
 						tileController.addView(rasters);
 
 						// start updating tiles and webglview

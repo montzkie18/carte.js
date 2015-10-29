@@ -13,9 +13,10 @@
 			| (Math.floor(255.0*Math.random()) & 0xFF);
 	}
 
-	var VectorTileView = function(tileProvider, webGlView, useRandomColors) {
+	var VectorTileView = function(tileProvider, webGlView, iconImage, useRandomColors) {
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
+		this.iconImage = iconImage;
 		this.tiles = {};
 		this.shownTiles = {};
 
@@ -47,28 +48,20 @@
 		this.shownTiles[url] = true;
 
 		if(this.tiles[url]) {
-			if(this.tiles[url].geometry) {
-				this.webGlView.addGeometry(this.tiles[url].geometry);
-			}
-			else if(this.tiles[url].data) {
-				var options = {};
-				options.features = this.tiles[url].data;
-				options.fillColor = this.useRandomColors ? getRandomColor() : null;
-				this.tiles[url].geometry = this.webGlView.createGeometry(options);
-				this.webGlView.draw();
-			}
+			if(this.tiles[url].polygons || this.tiles[url].lines)
+				if(this.tiles[url].polygons)
+					this.webGlView.addGeometry(this.tiles[url].polygons);
+				if(this.tiles[url].lines)
+					this.webGlView.addLine(this.tiles[url].lines);
+			else if(this.tiles[url].data) 
+				this.createFeatures(this.tiles[url].data);
 		}else{
 			var self = this;
 			this.tileProvider.getTile(x, y, z)
 				.then(function(response){
 					self.tiles[url] = response;
-					if(self.shownTiles[url]) {
-						var options = {};
-						options.features = self.tiles[url].data;
-						options.fillColor = self.useRandomColors ? getRandomColor() : null;
-						self.tiles[url].geometry = self.webGlView.createGeometry(options);
-						self.webGlView.draw();
-					}
+					if(self.shownTiles[url])
+						self.createFeatures(self.tiles[url].data);
 				}, function(reason){
 					console.log(reason);
 				});
@@ -80,19 +73,86 @@
 		// console.log("Hiding tile: " + url);
 		this.shownTiles[url] = false;
 
-		if(this.tiles[url] && this.tiles[url].geometry) {
-			this.webGlView.removeGeometry(this.tiles[url].geometry);
-			delete this.tiles[url].geometry;
-			this.tiles[url].geometry = null;
+		if(this.tiles[url]) {
+			if(this.tiles[url].polygons) {
+				this.webGlView.removeGeometry(this.tiles[url].polygons);
+				delete this.tiles[url].polygons;
+				this.tiles[url].polygons = null;
+			}
+
+			if(this.tiles[url].lines) {
+				this.webGlView.removeLine(this.tiles[url].lines);
+				delete this.tiles[url].lines;
+				this.tiles[url].lines = null;
+			}
+
+			if(this.tiles[url].points) {
+				var points = this.tiles[url].points;
+				for(var i=0; i<points.length; i++)
+					this.webGlView.removePoint(points[i]);
+				this.tiles[url].points = null;
+			}
 		}
 	};
 
 	VectorTileView.prototype.clear = function() {
 		for(var url in this.tiles) {
-			if(this.tiles[url].geometry)
-				this.webGlView.removeGeometry(this.tiles[url].geometry);
+			if(this.tiles[url].polygons) {
+				this.webGlView.removeGeometry(this.tiles[url].polygons);
+				delete this.tiles[url].polygons;
+				this.tiles[url].polygons = null;
+			}
+
+			if(this.tiles[url].lines) {
+				this.webGlView.removeLine(this.tiles[url].lines);
+				delete this.tiles[url].lines;
+				this.tiles[url].lines = null;
+			}
+
+			if(this.tiles[url].points) {
+				var points = this.tiles[url].points;
+				for(var i=0; i<points.length; i++)
+					this.webGlView.removePoint(points[i]);
+				this.tiles[url].points = null;
+			}
 		}
 		this.webGlView.draw();
+	};
+
+	VectorTileView.prototype.createFeatures = function(features) {
+		var added = false;
+
+		if(features.polygons.length > 0) {
+			var polygonOptions = {};
+			polygonOptions.features = features.polygons;
+			polygonOptions.fillColor = this.useRandomColors ? getRandomColor() : null;
+			this.tiles[url].polygons = this.webGlView.createGeometry(polygonOptions);
+			added = true;
+		}
+
+		if(features.lines.length > 0) {
+			var lineOptions = {};
+			lineOptions.features = features.lines;
+			lineOptions.strokeColor = this.useRandomColors ? getRandomColor() : null;
+			this.tiles[url].lines = this.webGlView.createLine(lineOptions);
+			added = true;
+		}
+
+		var points = [];
+		for(var i=0; i<features.points.length; i++) {
+			var point = features.points[i];
+			var markerOptions = {
+				position: {x:point.x, y:point.y, z:100},
+				color: {r:1, g:1, b:1},
+				image: this.iconImage,
+				imageName: this.iconImage.url
+			};
+			points.push(this.webGlView.addPoint(markerOptions));
+		}
+		this.tiles[url].points = points;
+
+		if(added)
+			this.webGlView.draw();
 	};
 
 	window.VectorTileView = VectorTileView;
