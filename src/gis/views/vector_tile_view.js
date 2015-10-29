@@ -54,14 +54,14 @@
 				if(this.tiles[url].lines)
 					this.webGlView.addLine(this.tiles[url].lines);
 			else if(this.tiles[url].data) 
-				this.createFeatures(this.tiles[url].data);
+				this.createFeatures(url, this.tiles[url].data);
 		}else{
 			var self = this;
 			this.tileProvider.getTile(x, y, z)
 				.then(function(response){
 					self.tiles[url] = response;
 					if(self.shownTiles[url])
-						self.createFeatures(self.tiles[url].data);
+						self.createFeatures(url, self.tiles[url].data);
 				}, function(reason){
 					console.log(reason);
 				});
@@ -119,7 +119,7 @@
 		this.webGlView.draw();
 	};
 
-	VectorTileView.prototype.createFeatures = function(features) {
+	VectorTileView.prototype.createFeatures = function(url, features) {
 		var added = false;
 
 		if(features.polygons.length > 0) {

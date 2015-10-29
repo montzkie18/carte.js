@@ -34,19 +34,23 @@
 		var polygons = [], points = [], lines = [];
 		if(feature.geometry.type == "Polygon") {
 			var coordinates = feature.geometry.coordinates;
+			var polygon = [];
 			for(var i=0; i<coordinates.length; i++) {
 				var linearRing = coordinates[i];
-				polygons.push(this._parseCoordinates(linearRing));
+				polygon.push(this._parseCoordinates(linearRing));
 			}
+			polygons.push(polygon);
 		}
 		else if(feature.geometry.type == "MultiPolygon") {
 			var coordinates = feature.geometry.coordinates;
 			for(var i=0; i<coordinates.length; i++) {
-				var polygon = coordinates[i];
-				for(var j=0; j<polygon.length; j++) {
-					var linearRing = polygon[j];
-					polygons.push(this._parseCoordinates(linearRing));
+				var polygonCoordinates = coordinates[i];
+				var polygon = [];
+				for(var j=0; j<polygonCoordinates.length; j++) {
+					var linearRing = polygonCoordinates[j];
+					polygon.push(this._parseCoordinates(linearRing));
 				}
+				polygons.push(polygon);
 			}
 		}
 		else if(feature.geometry.type == "LineString") {
@@ -70,8 +74,8 @@
 
 	GeoJSONDataSource.prototype._parseCoordinates = function(coordinates) {
 		var points = [];
-		for(var j=0; j<coordinates[i].length; j++) {
-			var latLng = new google.maps.LatLng(coordinates[i][j][1], coordinates[i][j][0]);
+		for(var i=0; i<coordinates.length; i++) {
+			var latLng = new google.maps.LatLng(coordinates[i][1], coordinates[i][0]);
 			var point = this.projection.fromLatLngToPoint(latLng);
 			points.push([point.x, point.y]);
 		}
