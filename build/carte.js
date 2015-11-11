@@ -315,15 +315,15 @@ var carte = {};
 		this.positions = new Float32Array(1000000 * 3);
 		this.positions.fill(START_VALUE);
 		this.positionsAttribute = new THREE.BufferAttribute(this.positions, 3);
-		this.positionsAttribute.setDynamic(true);
+		// this.positionsAttribute.setDynamic(true);
 
 		this.colors = new Float32Array(1000000 * 3);
 		this.colorsAttribute = new THREE.BufferAttribute(this.colors, 3);
-		this.colorsAttribute.setDynamic(true);
+		// this.colorsAttribute.setDynamic(true);
 
 		this.tiles = new Float32Array(1000000 * 4); 
 		this.tilesAttribute = new THREE.BufferAttribute(this.tiles, 4); 
-		this.tilesAttribute.setDynamic(true);
+		// this.tilesAttribute.setDynamic(true);
 
 		this.geometry = new THREE.BufferGeometry();
 		this.geometry.addAttribute('position', this.positionsAttribute);
@@ -848,6 +848,7 @@ var carte = {};
 		this.camera.position.z = 1000;
 		this.scene = new THREE.Scene();
 		this.sceneMask = new THREE.Scene();
+		this.sceneForeground = new THREE.Scene();
 		this.renderer = new THREE.WebGLRenderer({
 			alpha: true,
 			antialiasing: true,
@@ -911,9 +912,12 @@ var carte = {};
 			var context = this.context, renderer = this.renderer;
 			var maskEnabled = this.numMasks > 0;
 
+			this.renderer.setClearColor(0xffffff, 0);
+			this.renderer.clear(true, true, true);
+
 			if(maskEnabled) {
-				context.colorMask( false, false, false, false );
-				context.depthMask( false );
+				context.colorMask(false, false, false, false);
+				context.depthMask(false);
 
 				context.enable(context.STENCIL_TEST);
 				context.stencilOp(context.REPLACE, context.REPLACE, context.REPLACE);
@@ -937,6 +941,9 @@ var carte = {};
 			if(maskEnabled) {
 				context.disable(context.STENCIL_TEST);
 			}
+
+			this.pointRenderer.draw();
+			this.renderer.render(this.sceneForeground, this.camera);
 
 			this.dispatchEvent({type: 'render'});
 		};
@@ -963,15 +970,17 @@ var carte = {};
 	};
 
 	WebGLView.prototype.init = function() {
-		//!TODO: Remove dependency of PointRenderer from WebGLView
+		// draw all points in the foreground
 		this.pointRenderer = new PointRenderer(this).init();
-		this.scene.add(this.pointRenderer.sceneObject);
+		this.sceneForeground.add(this.pointRenderer.sceneObject);
+
+		// all these layers are maskable
 		this.spriteRenderer = new SpriteRenderer().init();
 		this.scene.add(this.spriteRenderer.sceneObject);
 		this.polygonRenderer = new PolygonRenderer().init();
 		this.lineRenderer = new LineRenderer().init();
-		// add them to an array so we can draw/update them all later
-		this.objectRenderers.push(this.pointRenderer);
+
+		// add all maskable layers to an array so we can draw/update them all later
 		this.objectRenderers.push(this.polygonRenderer);
 		this.objectRenderers.push(this.spriteRenderer);
 		this.objectRenderers.push(this.lineRenderer);

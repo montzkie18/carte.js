@@ -46,15 +46,15 @@
 		this.positions = new Float32Array(1000000 * 3);
 		this.positions.fill(START_VALUE);
 		this.positionsAttribute = new THREE.BufferAttribute(this.positions, 3);
-		this.positionsAttribute.setDynamic(true);
+		// this.positionsAttribute.setDynamic(true);
 
 		this.colors = new Float32Array(1000000 * 3);
 		this.colorsAttribute = new THREE.BufferAttribute(this.colors, 3);
-		this.colorsAttribute.setDynamic(true);
+		// this.colorsAttribute.setDynamic(true);
 
 		this.tiles = new Float32Array(1000000 * 4); 
 		this.tilesAttribute = new THREE.BufferAttribute(this.tiles, 4); 
-		this.tilesAttribute.setDynamic(true);
+		// this.tilesAttribute.setDynamic(true);
 
 		this.geometry = new THREE.BufferGeometry();
 		this.geometry.addAttribute('position', this.positionsAttribute);
