@@ -637,19 +637,19 @@ var carte = {};
 		this.positions = new Float32Array(1024*POSITION_INTERVAL); 
 		this.positions.fill(START_VALUE);
 		this.positionsAttribute = new THREE.BufferAttribute(this.positions, 3);
-		this.positionsAttribute.setDynamic(true);
+		// this.positionsAttribute.setDynamic(true);
 
 		this.indices = new Uint16Array(1024*INDEX_INTERVAL); 
 		this.indicesAttribute = new THREE.BufferAttribute(this.indices, 1);
-		this.indicesAttribute.setDynamic(true);
+		// this.indicesAttribute.setDynamic(true);
 
 		this.uv = new Float32Array(1024*UV_INTERVAL); 
 		this.uvAttribute = new THREE.BufferAttribute(this.uv, 2); 
-		this.uvAttribute.setDynamic(true);
+		// this.uvAttribute.setDynamic(true);
 
 		this.tiles = new Float32Array(1024*TILE_INTERVAL); 
 		this.tilesAttribute = new THREE.BufferAttribute(this.tiles, 4); 
-		this.tilesAttribute.setDynamic(true);
+		// this.tilesAttribute.setDynamic(true);
 
 		this.geometry = new THREE.BufferGeometry();
 		this.geometry.setIndex(this.indicesAttribute);
