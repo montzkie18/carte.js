@@ -224,9 +224,10 @@
 			if(this.hoveredMarker !== null) {
 				this.hoveredMarker.dispatchEvent({type: 'mouseout'});
 				this.hoveredMarker = null;
+				if(this.webGlView && this.webGlView.map) {
+					this.webGlView.map.setOptions({draggableCursor:null});
+				}
 			}
-			if(this.webGlView && this.webGlView.map)
-				this.webGlView.map.setOptions({draggableCursor:null});
 		}
 	};
 
