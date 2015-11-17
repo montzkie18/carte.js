@@ -235,7 +235,7 @@
 	};
 
 	WebGLView.destroyLine = function(line) {
-		delete line;
+		
 	};
 
 	WebGLView.prototype.createMask = function(options) {

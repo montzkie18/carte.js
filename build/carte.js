@@ -1,3 +1,6 @@
+/*jslint browser: true */
+/*jslint node: true */
+"use strict";
 // declare package names
 var carte = {};
 (function(){
@@ -1061,7 +1064,7 @@ var carte = {};
 	};
 
 	WebGLView.destroyLine = function(line) {
-		delete line;
+		
 	};
 
 	WebGLView.prototype.createMask = function(options) {
@@ -1245,7 +1248,6 @@ var carte = {};
 			boundsSwLatLng = bounds.getSouthWest(),
 			boundsNwLatLng = new google.maps.LatLng(boundsNeLatLng.lat(), boundsSwLatLng.lng()),
 			boundsSeLatLng = new google.maps.LatLng(boundsSwLatLng.lat(), boundsNeLatLng.lng()),
-			projection = map.getProjection(),
 			tileCoordinateNw = convertPointToTile(boundsNwLatLng, zoom, projection),
 			tileCoordinateSe = convertPointToTile(boundsSeLatLng, zoom, projection),
 			visibleBounds = new Rectangle(tileCoordinateNw.x, tileCoordinateNw.y, 
@@ -1319,7 +1321,7 @@ var carte = {};
 				featureCollection.points = featureCollection.points.concat(feature.points);
 			if(feature.lines.length > 0)
 				featureCollection.lines = featureCollection.lines.concat(feature.lines);
-		}
+		};
 		if(data) {
 			if(data.type == "FeatureCollection") {
 				var features = data.features;
@@ -1334,22 +1336,23 @@ var carte = {};
 
 	GeoJSONDataSource.prototype._parseFeature = function(feature) {
 		var polygons = [], points = [], lines = [];
+		var coordinates, polygon, linearRing, i;
 		if(feature.geometry.type == "Polygon") {
-			var coordinates = feature.geometry.coordinates;
-			var polygon = [];
-			for(var i=0; i<coordinates.length; i++) {
-				var linearRing = coordinates[i];
+			coordinates = feature.geometry.coordinates;
+			polygon = [];
+			for(i=0; i<coordinates.length; i++) {
+				linearRing = coordinates[i];
 				polygon.push(this._parseCoordinates(linearRing));
 			}
 			polygons.push(polygon);
 		}
 		else if(feature.geometry.type == "MultiPolygon") {
-			var coordinates = feature.geometry.coordinates;
-			for(var i=0; i<coordinates.length; i++) {
+			coordinates = feature.geometry.coordinates;
+			for(i=0; i<coordinates.length; i++) {
 				var polygonCoordinates = coordinates[i];
-				var polygon = [];
+				polygon = [];
 				for(var j=0; j<polygonCoordinates.length; j++) {
-					var linearRing = polygonCoordinates[j];
+					linearRing = polygonCoordinates[j];
 					polygon.push(this._parseCoordinates(linearRing));
 				}
 				polygons.push(polygon);
@@ -1359,14 +1362,14 @@ var carte = {};
 			lines.push(this._parseCoordinates(feature.geometry.coordinates));
 		}
 		else if(feature.geometry.type == "MultiLineString") {
-			var coordinates = feature.geometry.coordinates;
-			for(var i=0; i<coordinates.length; i++) {
+			coordinates = feature.geometry.coordinates;
+			for(i=0; i<coordinates.length; i++) {
 				var lineString = coordinates[i];
 				lines.push(this._parseCoordinates(lineString));
 			}
 		}
 		else if(feature.geometry.type == "Point") {
-			var coordinates = feature.geometry.coordinates;
+			coordinates = feature.geometry.coordinates;
 			var latLng = new google.maps.LatLng(coordinates[1], coordinates[0]);
 			var point = this.projection.fromLatLngToPoint(latLng);
 			points.push({latLng: latLng, point: point});
@@ -1415,9 +1418,9 @@ var carte = {};
 		this.responseType = "arraybuffer";
 	};
 
-	STADataSource.prototype.parse = function(data) {
+	STADataSource.prototype.parse = function(arraybuffer) {
 		var projection = this.projection;
-		var data = new Uint32Array(response.data);
+		var data = new Uint32Array(arraybuffer);
 		var markers = [];
 		for (var i = 0; i < data.length; i+=4) {
 			var latLng = new google.maps.LatLng(data[i]/1000000.0, data[i+1]/1000000.0);

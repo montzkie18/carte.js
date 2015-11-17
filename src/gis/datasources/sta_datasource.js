@@ -14,9 +14,9 @@
 		this.responseType = "arraybuffer";
 	};
 
-	STADataSource.prototype.parse = function(data) {
+	STADataSource.prototype.parse = function(arraybuffer) {
 		var projection = this.projection;
-		var data = new Uint32Array(response.data);
+		var data = new Uint32Array(arraybuffer);
 		var markers = [];
 		for (var i = 0; i < data.length; i+=4) {
 			var latLng = new google.maps.LatLng(data[i]/1000000.0, data[i+1]/1000000.0);

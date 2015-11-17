@@ -79,7 +79,6 @@
 			boundsSwLatLng = bounds.getSouthWest(),
 			boundsNwLatLng = new google.maps.LatLng(boundsNeLatLng.lat(), boundsSwLatLng.lng()),
 			boundsSeLatLng = new google.maps.LatLng(boundsSwLatLng.lat(), boundsNeLatLng.lng()),
-			projection = map.getProjection(),
 			tileCoordinateNw = convertPointToTile(boundsNwLatLng, zoom, projection),
 			tileCoordinateSe = convertPointToTile(boundsSeLatLng, zoom, projection),
 			visibleBounds = new Rectangle(tileCoordinateNw.x, tileCoordinateNw.y, 

@@ -17,7 +17,7 @@
 				featureCollection.points = featureCollection.points.concat(feature.points);
 			if(feature.lines.length > 0)
 				featureCollection.lines = featureCollection.lines.concat(feature.lines);
-		}
+		};
 		if(data) {
 			if(data.type == "FeatureCollection") {
 				var features = data.features;
@@ -32,22 +32,23 @@
 
 	GeoJSONDataSource.prototype._parseFeature = function(feature) {
 		var polygons = [], points = [], lines = [];
+		var coordinates, polygon, linearRing, i;
 		if(feature.geometry.type == "Polygon") {
-			var coordinates = feature.geometry.coordinates;
-			var polygon = [];
-			for(var i=0; i<coordinates.length; i++) {
-				var linearRing = coordinates[i];
+			coordinates = feature.geometry.coordinates;
+			polygon = [];
+			for(i=0; i<coordinates.length; i++) {
+				linearRing = coordinates[i];
 				polygon.push(this._parseCoordinates(linearRing));
 			}
 			polygons.push(polygon);
 		}
 		else if(feature.geometry.type == "MultiPolygon") {
-			var coordinates = feature.geometry.coordinates;
-			for(var i=0; i<coordinates.length; i++) {
+			coordinates = feature.geometry.coordinates;
+			for(i=0; i<coordinates.length; i++) {
 				var polygonCoordinates = coordinates[i];
-				var polygon = [];
+				polygon = [];
 				for(var j=0; j<polygonCoordinates.length; j++) {
-					var linearRing = polygonCoordinates[j];
+					linearRing = polygonCoordinates[j];
 					polygon.push(this._parseCoordinates(linearRing));
 				}
 				polygons.push(polygon);
@@ -57,14 +58,14 @@
 			lines.push(this._parseCoordinates(feature.geometry.coordinates));
 		}
 		else if(feature.geometry.type == "MultiLineString") {
-			var coordinates = feature.geometry.coordinates;
-			for(var i=0; i<coordinates.length; i++) {
+			coordinates = feature.geometry.coordinates;
+			for(i=0; i<coordinates.length; i++) {
 				var lineString = coordinates[i];
 				lines.push(this._parseCoordinates(lineString));
 			}
 		}
 		else if(feature.geometry.type == "Point") {
-			var coordinates = feature.geometry.coordinates;
+			coordinates = feature.geometry.coordinates;
 			var latLng = new google.maps.LatLng(coordinates[1], coordinates[0]);
 			var point = this.projection.fromLatLngToPoint(latLng);
 			points.push({latLng: latLng, point: point});
