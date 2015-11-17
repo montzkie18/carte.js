@@ -200,7 +200,7 @@
 		this.raycaster.params.Points.threshold = 16*1/Math.pow(2, this.webGlView.scale);
 		this.raycaster.setFromCamera(this.mouse, this.webGlView.camera);
 		var intersections = this.raycaster.intersectObjects(this.raycastObjects);
-		intersection = (intersections.length) > 0 ? intersections[0] : null;
+		var intersection = (intersections.length) > 0 ? intersections[0] : null;
 
 		// we hit something
 		if(intersection) {
