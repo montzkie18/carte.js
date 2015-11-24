@@ -13,15 +13,16 @@
 			| (Math.floor(255.0*Math.random()) & 0xFF);
 	}
 
-	var VectorTileView = function(tileProvider, webGlView, iconImage, useRandomColors) {
+	var VectorTileView = function(tileProvider, webGlView, options) {
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
-		this.iconImage = iconImage;
+		this.iconImage = options.iconImage;
+		this.fillColor = options.fillColor;
+		this.fillOpacity = options.fillOpacity;
+		this.strokeColor = options.strokeColor;
+		this.strokeOpacity = options.strokeOpacity;
 		this.tiles = {};
 		this.shownTiles = {};
-
-		// used for debugging
-		this.useRandomColors = useRandomColors;
 	};
 
 	VectorTileView.prototype.setTileSize = function(tileSize) {
@@ -125,7 +126,10 @@
 		if(features.polygons.length > 0) {
 			var polygonOptions = {};
 			polygonOptions.features = features.polygons;
-			polygonOptions.fillColor = this.useRandomColors ? getRandomColor() : null;
+			polygonOptions.fillColor = this.fillColor;
+			polygonOptions.fillOpacity = this.fillOpacity;
+			polygonOptions.strokeColor = this.strokeColor;
+			polygonOptions.strokeOpacity = this.strokeOpacity;
 			this.tiles[url].polygons = this.webGlView.createGeometry(polygonOptions);
 			added = true;
 		}

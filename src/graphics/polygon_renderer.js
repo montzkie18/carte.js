@@ -8,7 +8,9 @@
 		options = options || {};
 		var features = options.features || [];
 		var fillColor = (options.fillColor !== null && options.fillColor !== undefined) ? options.fillColor : 0x0000FF;
+		var fillOpacity = (options.fillOpacity !== null && options.fillOpacity !== undefined) ? options.fillOpacity : 0.25;
 		var strokeColor = (options.strokeColor !== null && options.strokeColor !== undefined) ? options.strokeColor : 0xFFFFFF;
+		var strokeOpacity = (options.strokeOpacity !== null && options.strokeOpacity !== undefined) ? options.strokeOpacity : 0.25;
 
 		if(features === null || features.length === 0)
 			return null;
@@ -72,7 +74,7 @@
 
 		var coveragePolygon = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
 			color: fillColor,
-			opacity: 0.25, 
+			opacity: fillOpacity, 
 			transparent: true,
 			depthWrite: false,
 			depthTest: false
@@ -80,8 +82,8 @@
 
 		var outlinePolygon = new THREE.LineSegments(outline, new THREE.LineBasicMaterial({
 			color: strokeColor,
-			linewidth: 2,
-			opacity: 0.25, 
+			opacity: strokeOpacity,
+			linewidth: 5,
 			transparent: true,
 			depthWrite: false,
 			depthTest: false

@@ -515,7 +515,9 @@ var carte = {};
 		options = options || {};
 		var features = options.features || [];
 		var fillColor = (options.fillColor !== null && options.fillColor !== undefined) ? options.fillColor : 0x0000FF;
+		var fillOpacity = (options.fillOpacity !== null && options.fillOpacity !== undefined) ? options.fillOpacity : 0.25;
 		var strokeColor = (options.strokeColor !== null && options.strokeColor !== undefined) ? options.strokeColor : 0xFFFFFF;
+		var strokeOpacity = (options.strokeOpacity !== null && options.strokeOpacity !== undefined) ? options.strokeOpacity : 0.25;
 
 		if(features === null || features.length === 0)
 			return null;
@@ -579,7 +581,7 @@ var carte = {};
 
 		var coveragePolygon = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
 			color: fillColor,
-			opacity: 0.25, 
+			opacity: fillOpacity, 
 			transparent: true,
 			depthWrite: false,
 			depthTest: false
@@ -587,8 +589,8 @@ var carte = {};
 
 		var outlinePolygon = new THREE.LineSegments(outline, new THREE.LineBasicMaterial({
 			color: strokeColor,
-			linewidth: 2,
-			opacity: 0.25, 
+			opacity: strokeOpacity,
+			linewidth: 5,
 			transparent: true,
 			depthWrite: false,
 			depthTest: false
@@ -870,6 +872,9 @@ var carte = {};
 
 		this.update = function() {
 			var map = this.map;
+			var projection = this.getProjection();
+			if(!map || !projection) return;
+			
 			var bounds = map.getBounds();
 			var topLeft = new google.maps.LatLng(
 				bounds.getNorthEast().lat(),
@@ -878,7 +883,7 @@ var carte = {};
 
 			// Translate the webgl canvas based on maps's bounds
 			var canvas = this.renderer.domElement;
-			var point = this.getProjection().fromLatLngToDivPixel(topLeft);
+			var point = projection.fromLatLngToDivPixel(topLeft);
 			canvas.style[CSS_TRANSFORM] = 'translate(' + Math.round(point.x) + 'px,' + Math.round(point.y) + 'px)';
 
 			// Resize the renderer / canvas based on size of the map
@@ -1566,15 +1571,16 @@ var carte = {};
 			| (Math.floor(255.0*Math.random()) & 0xFF);
 	}
 
-	var VectorTileView = function(tileProvider, webGlView, iconImage, useRandomColors) {
+	var VectorTileView = function(tileProvider, webGlView, options) {
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
-		this.iconImage = iconImage;
+		this.iconImage = options.iconImage;
+		this.fillColor = options.fillColor;
+		this.fillOpacity = options.fillOpacity;
+		this.strokeColor = options.strokeColor;
+		this.strokeOpacity = options.strokeOpacity;
 		this.tiles = {};
 		this.shownTiles = {};
-
-		// used for debugging
-		this.useRandomColors = useRandomColors;
 	};
 
 	VectorTileView.prototype.setTileSize = function(tileSize) {
@@ -1678,7 +1684,10 @@ var carte = {};
 		if(features.polygons.length > 0) {
 			var polygonOptions = {};
 			polygonOptions.features = features.polygons;
-			polygonOptions.fillColor = this.useRandomColors ? getRandomColor() : null;
+			polygonOptions.fillColor = this.fillColor;
+			polygonOptions.fillOpacity = this.fillOpacity;
+			polygonOptions.strokeColor = this.strokeColor;
+			polygonOptions.strokeOpacity = this.strokeOpacity;
 			this.tiles[url].polygons = this.webGlView.createGeometry(polygonOptions);
 			added = true;
 		}

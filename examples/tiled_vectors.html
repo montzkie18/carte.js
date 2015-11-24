@@ -55,7 +55,13 @@
 					webGlView.addEventListener("added_to_dom", function(){
 						var tileSource = new GeoJSONDataSource("sample_data/tiles/geom", projection);
 						var tileProvider = new TileProvider(tileSource, http, Q);
-						tileController.addView(new VectorTileView(tileProvider, webGlView));
+						var layerOptions = {
+							fillColor: 0x0000FF,
+							fillOpacity: 0.25,
+							strokeColor: 0xFFFFFF,
+							strokeOpacity: 0.25
+						};
+						tileController.addView(new VectorTileView(tileProvider, webGlView, layerOptions));
 						tileController.setMap(map);
 							
 					});

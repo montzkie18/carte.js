@@ -41,6 +41,9 @@
 
 		this.update = function() {
 			var map = this.map;
+			var projection = this.getProjection();
+			if(!map || !projection) return;
+			
 			var bounds = map.getBounds();
 			var topLeft = new google.maps.LatLng(
 				bounds.getNorthEast().lat(),
@@ -49,7 +52,7 @@
 
 			// Translate the webgl canvas based on maps's bounds
 			var canvas = this.renderer.domElement;
-			var point = this.getProjection().fromLatLngToDivPixel(topLeft);
+			var point = projection.fromLatLngToDivPixel(topLeft);
 			canvas.style[CSS_TRANSFORM] = 'translate(' + Math.round(point.x) + 'px,' + Math.round(point.y) + 'px)';
 
 			// Resize the renderer / canvas based on size of the map
