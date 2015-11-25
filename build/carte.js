@@ -316,7 +316,12 @@ var carte = {};
 
 	PointRenderer.prototype.init = function() {
 		this.positions = new Float32Array(1000000 * 3);
-		this.positions.fill(START_VALUE);
+		if(typeof(this.positions.fill) == typeof(Function)){
+			this.positions.fill(START_VALUE);
+		} else {
+			for(var i=0; i<this.positions.length; i++)
+				this.positions[i] = START_VALUE;
+		}
 		this.positionsAttribute = new THREE.BufferAttribute(this.positions, 3);
 		// this.positionsAttribute.setDynamic(true);
 
@@ -641,7 +646,12 @@ var carte = {};
 
 	SpriteRenderer.prototype.init = function() {
 		this.positions = new Float32Array(1024*POSITION_INTERVAL); 
-		this.positions.fill(START_VALUE);
+		if(typeof(this.positions.fill) == typeof(Function)){
+			this.positions.fill(START_VALUE);
+		} else {
+			for(var i=0; i<this.positions.length; i++)
+				this.positions[i] = START_VALUE;
+		}
 		this.positionsAttribute = new THREE.BufferAttribute(this.positions, 3);
 		// this.positionsAttribute.setDynamic(true);
 
