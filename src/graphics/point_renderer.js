@@ -81,7 +81,6 @@
 		});
 
 		this.sceneObject = new THREE.Points(this.geometry, this.material);
-		this.raycastObjects = [this.sceneObject];
 		this.addEventListeners();
 
 		return this;
@@ -204,7 +203,7 @@
 		// check if we hit any of the points in the particle system
 		this.raycaster.params.Points.threshold = 16*1/Math.pow(2, this.webGlView.scale);
 		this.raycaster.setFromCamera(this.mouse, this.webGlView.camera);
-		var intersections = this.raycaster.intersectObjects(this.raycastObjects);
+		var intersections = this.raycaster.intersectObject(this.sceneObject);
 		var intersection = (intersections.length) > 0 ? intersections[0] : null;
 
 		// we hit something

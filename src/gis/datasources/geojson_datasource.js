@@ -32,43 +32,45 @@
 
 	GeoJSONDataSource.prototype._parseFeature = function(feature) {
 		var polygons = [], points = [], lines = [];
-		var coordinates, polygon, linearRing, i;
+		var coordinates, rings, linearRing, i;
 		if(feature.geometry.type == "Polygon") {
 			coordinates = feature.geometry.coordinates;
-			polygon = [];
+			rings = [];
 			for(i=0; i<coordinates.length; i++) {
 				linearRing = coordinates[i];
-				polygon.push(this._parseCoordinates(linearRing));
+				rings.push(this._parseCoordinates(linearRing));
 			}
-			polygons.push(polygon);
+			polygons.push(new Polygon(rings, feature.properties));
 		}
 		else if(feature.geometry.type == "MultiPolygon") {
 			coordinates = feature.geometry.coordinates;
+			var subPolygons = [];
 			for(i=0; i<coordinates.length; i++) {
 				var polygonCoordinates = coordinates[i];
-				polygon = [];
+				rings = [];
 				for(var j=0; j<polygonCoordinates.length; j++) {
 					linearRing = polygonCoordinates[j];
-					polygon.push(this._parseCoordinates(linearRing));
+					rings.push(this._parseCoordinates(linearRing));
 				}
-				polygons.push(polygon);
+				subPolygons.push(new Polygon(rings, feature.properties));
 			}
+			polygons.push(new MultiPolygon(subPolygons, feature.properties));
 		}
 		else if(feature.geometry.type == "LineString") {
-			lines.push(this._parseCoordinates(feature.geometry.coordinates));
+			lines.push(new Line(this._parseCoordinates(feature.geometry.coordinates), feature.properties));
 		}
 		else if(feature.geometry.type == "MultiLineString") {
 			coordinates = feature.geometry.coordinates;
+			var subLines = [];
 			for(i=0; i<coordinates.length; i++) {
 				var lineString = coordinates[i];
-				lines.push(this._parseCoordinates(lineString));
+				subLines.push(new Line(this._parseCoordinates(lineString), feature.properties));
 			}
+			lines.push(new MultiLine(subLines, feature.properties));
 		}
 		else if(feature.geometry.type == "Point") {
 			coordinates = feature.geometry.coordinates;
-			var latLng = new google.maps.LatLng(coordinates[1], coordinates[0]);
-			var point = this.projection.fromLatLngToPoint(latLng);
-			points.push({latLng: latLng, point: point});
+			points.push(new Point(coordinates[1], coordinates[0], this.projection, feature.properties));
 		}
 		return {polygons:polygons, points:points, lines:lines};
 	};
@@ -76,9 +78,7 @@
 	GeoJSONDataSource.prototype._parseCoordinates = function(coordinates) {
 		var points = [];
 		for(var i=0; i<coordinates.length; i++) {
-			var latLng = new google.maps.LatLng(coordinates[i][1], coordinates[i][0]);
-			var point = this.projection.fromLatLngToPoint(latLng);
-			points.push([point.x, point.y]);
+			points.push(new Point(coordinates[i][1], coordinates[i][0], this.projection));
 		}
 		return points;
 	};

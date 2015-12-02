@@ -74,5 +74,10 @@
 		this.webGlView.draw();
 	};
 
+	ImageTileView.prototype.getObjectUnderPointOnTile = function(pointX, pointY, tileX, tileY, zoom) {
+		// image tiles are not clickable for now
+		return null;
+	};
+
 	window.ImageTileView = ImageTileView;
 }());

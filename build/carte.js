@@ -4,7 +4,127 @@
 // declare package names
 var carte = {};
 (function(){
+	var Geom = function() {};
+
+	Geom.prototype.setStart = function(value) {
+		this.startIndex = value;
+	};
+
+	Geom.prototype.setEnd = function(value) {
+		this.endIndex = value;
+	};
+
+	Geom.prototype.containsIndex = function(value) {
+		return this.startIndex <= value && value <= this.endIndex;
+	};
+
+	window.Geom = Geom;
+}());
+(function(){
+	var Line = function(points, properties) {
+		this.points = points;
+		this.properties = properties;
+	};
+
+	Line.prototype = new Geom();
+	Line.prototype.constructor = Line;
+
+	window.Line = Line;
+}());
+(function(){
+	var MultiLine = function(lines, properties) {
+		this.lines = lines;
+		this.properties = properties;
+	};
+
+	MultiLine.prototype = new Geom();
+	MultiLine.prototype.constructor = MultiLine;
+
+	window.MultiLine = MultiLine;
+}());
+(function(){
+	var MultiPolygon = function(polygons, properties) {
+		this.polygons = polygons;
+		this.properties  =properties;
+	};
+
+	MultiPolygon.prototype = new Geom();
+	MultiPolygon.prototype.constructor = MultiPolygon;
+
+	MultiPolygon.prototype.computeBoundingSphere = function() {
+		if(!this.sphere) this.sphere = new THREE.Sphere();
+		var points = [];
+		for(var i=0; i<this.polygons.length; i++) {
+			var polygon = this.polygons[i];
+			if(polygon.rings.length > 0) {
+				var ring = polygon.rings[0];
+				for(var j=0; j<ring.length; j++) {
+					points.push(new THREE.Vector3(ring[j].point.x, ring[j].point.y, 0));
+				}
+			}
+		}
+		this.sphere.setFromPoints(points);
+	};
+
+	MultiPolygon.prototype.intersectsSphere = function(sphere) {
+		return this.sphere.intersectsSphere(sphere);
+	};
+
+	window.MultiPolygon = MultiPolygon;
+}());
+(function(){
+	var Point = function(lat, lng, projection, properties) {
+		this.latLng = new google.maps.LatLng(lat, lng);
+		this.point = projection.fromLatLngToPoint(this.latLng);
+		this.properties = properties ? properties : {};
+	};
+
+	window.Point = Point;
+}());
+(function(){
+	var Polygon = function(rings, properties) {
+		this.rings = rings;
+		this.properties = properties;
+		this.sphere = new THREE.Sphere();
+	};
+
+	Polygon.prototype = new Geom();
+	Polygon.prototype.constructor = Polygon;
+
+	Polygon.prototype.computeBoundingSphere = function() {
+		if(this.rings.length > 0) {
+			var ring = this.rings[0];
+			var points = [];
+			for(var i=0; i<ring.length; i++) {
+				points.push(new THREE.Vector3(ring[i].point.x, ring[i].point.y, 0));
+			}
+			this.sphere.setFromPoints(points);
+		}
+	};
+
+	Polygon.prototype.intersectsSphere = function(sphere) {
+		return this.sphere.intersectsSphere(sphere);
+	};
+
+	Polygon.prototype.getCenter = function() {
+		return this.sphere.center;
+	};
+
+	window.Polygon = Polygon;
+}());
+(function(){
 	var Rectangle = function(x, y, width, height) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.ulx = x;
+		this.uly = y;
+		this.lrx = x+width;
+		this.lry = y+height;
+	};
+
+	Rectangle.prototype.update = function(x, y, width, height) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -200,27 +320,13 @@ var carte = {};
 		// iterate every line which should contain the following array:
 		// [linestring or array of points]
 		for(var i=0; i<features.length; i++){
-			var polygon  = features[i];
-			for(var j=0; j<polygon.length; j++) {
-				var coordinate = polygon[j];
-				var point = {x: coordinate[0], y: coordinate[1]};
-
-				var vertex1 = new THREE.Vector3(point.x, point.y, 1);
-				line.vertices.push(vertex1);
-
-				var coord0, point0, vertex0;
-				if(j == polygon.length-1) {
-					coord0 = polygon[0];
-					point0 = {x: coord0[0], y: coord0[1]};
-					vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
-					line.vertices.push(vertex0);
-				}else{
-					coord0 = polygon[j+1];
-					point0 = {x: coord0[0], y: coord0[1]};
-					vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
-					line.vertices.push(vertex0);
-				}
-			}	
+			var geom  = features[i];
+			if(geom instanceof Line) {
+				createLineVertices(geom, line);
+			}else if(geom instanceof MultiLine) {
+				for(var index in geom.lines) 
+					createLineVertices(geom.lines[index], line);
+			}
 		}
 
 		var linePolygon = new THREE.LineSegments(line, new THREE.LineBasicMaterial({
@@ -234,6 +340,20 @@ var carte = {};
 
 		return linePolygon;
 	};
+
+	function createLineVertices(obj, line) {
+		for(var pointIndex=0; j<obj.points.length; j++) {
+			var p = obj.points[pointIndex];
+			line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+			if(j == obj.points.length-1) {
+				p = obj.points[0];
+				line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+			}else{
+				p = obj.points[j+1];
+				line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+			}
+		}	
+	}
 
 	window.LineRenderer = LineRenderer;
 }());
@@ -353,7 +473,6 @@ var carte = {};
 		});
 
 		this.sceneObject = new THREE.Points(this.geometry, this.material);
-		this.raycastObjects = [this.sceneObject];
 		this.addEventListeners();
 
 		return this;
@@ -476,7 +595,7 @@ var carte = {};
 		// check if we hit any of the points in the particle system
 		this.raycaster.params.Points.threshold = 16*1/Math.pow(2, this.webGlView.scale);
 		this.raycaster.setFromCamera(this.mouse, this.webGlView.camera);
-		var intersections = this.raycaster.intersectObjects(this.raycastObjects);
+		var intersections = this.raycaster.intersectObject(this.sceneObject);
 		var intersection = (intersections.length) > 0 ? intersections[0] : null;
 
 		// we hit something
@@ -530,59 +649,29 @@ var carte = {};
 		var geometry = new THREE.Geometry();
 		var outline = new THREE.Geometry();
 		var vertexOffset = geometry.vertices.length;
-		var numPolygons = 0;
 
 		// iterate every polygon which should contain the following arrays:
 		// [outer loop], [inner loop 1], ..., [inner loop n]
 		for(var j=0; j<features.length; j++){
-			var polygon  = features[j];
-			for(var p=0; p<polygon.length; p++) {
-				var loop = polygon[p];
-				var points = [], holeIndices = [], holeIndex = 0;
+			var geom  = features[j];
+			geom.setStart(geometry.vertices.length);
 
-				for(var l=0; l<loop.length; l++) {
-					var coordinate = loop[l];
-					var point = {x: coordinate[0], y: coordinate[1]};
-					points.push(point.x);
-					points.push(point.y);
-
-					var vertex = new THREE.Vector3(point.x, point.y, 1001);
-					geometry.vertices.push(vertex);
-
-					var vertex1 = new THREE.Vector3(point.x, point.y, 1);
-					outline.vertices.push(vertex1);
-
-					var coord0, point0, vertex0;
-					if(l == loop.length-1) {
-						coord0 = loop[0];
-						point0 = {x: coord0[0], y: coord0[1]};
-						vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
-						outline.vertices.push(vertex0);
-					}else{
-						coord0 = loop[l+1];
-						point0 = {x: coord0[0], y: coord0[1]};
-						vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
-						outline.vertices.push(vertex0);
-					}
-				}
-
-				if(p>0) holeIndices.push(holeIndex);
-				holeIndex += loop.length;
-
-				var tris = earcut(points, null, 2);
-				for(var k=0; k<tris.length; k+=3) {
-					// 2-1-0 means face up
-					var face = new THREE.Face3(
-						tris[k+2] + vertexOffset, 
-						tris[k+1] + vertexOffset, 
-						tris[k+0] + vertexOffset
-					);
-					geometry.faces.push(face);
-				}
+			if(geom instanceof Polygon) {
+				createPolygonVertices(geom, geometry, outline, vertexOffset);
 				vertexOffset = geometry.vertices.length;
-				numPolygons++;
-			}	
+			}else if(geom instanceof MultiPolygon) {
+				for(var index in geom.polygons) {
+					createPolygonVertices(geom.polygons[index], geometry, outline, vertexOffset);
+					vertexOffset = geometry.vertices.length;
+				}
+			}
+
+			geom.setEnd(geometry.vertices.length);
 		}
+
+		geometry.computeFaceNormals();
+		geometry.computeBoundingSphere();
+		geometry.computeBoundingBox();
 
 		var coveragePolygon = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
 			color: fillColor,
@@ -603,6 +692,45 @@ var carte = {};
 
 		return {shape: coveragePolygon, outline: outlinePolygon};
 	};
+
+
+	function createPolygonVertices(polygon, geometry, outline, vertexOffset) {
+		for(var ringIndex=0; ringIndex<polygon.rings.length; ringIndex++) {
+			var ring = polygon.rings[ringIndex];
+			var points = [], holeIndices = [], holeIndex = 0;
+
+			for(var pointIndex=0; pointIndex<ring.length; pointIndex++) {
+				var p = ring[pointIndex];
+				points.push(p.point.x);
+				points.push(p.point.y);
+
+				geometry.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 3990));
+				outline.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+
+				if(pointIndex == ring.length-1) {
+					p = ring[0];
+					outline.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+				}else{
+					p = ring[pointIndex+1];
+					outline.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+				}
+			}
+
+			if(ringIndex>0) holeIndices.push(holeIndex);
+			holeIndex += ring.length;
+
+			var tris = earcut(points, null, 2);
+			for(var k=0; k<tris.length; k+=3) {
+				// 2-1-0 means face up
+				var face = new THREE.Face3(
+					tris[k+2] + vertexOffset, 
+					tris[k+1] + vertexOffset, 
+					tris[k+0] + vertexOffset
+				);
+				geometry.faces.push(face);
+			}
+		}
+	}
 
 	window.PolygonRenderer = PolygonRenderer;
 }());
@@ -1193,12 +1321,14 @@ var carte = {};
 		return tileCoordinate;
 	}
 
-	var TileController = function(webGlView) {
+	var TileController = function(webGlView, options) {
 		this.webGlView = webGlView;
-		this.bounds = new Rectangle(0, 0, 0, 0);
+		options = options ? options : {};
+		this.minZoom = (options.minZoom !== undefined) ? options.minZoom : 0;
+		this.maxZoom = (options.maxZoom !== undefined) ? options.maxZoom : 10;
+		this.clampedBounds = new Rectangle(0, 0, 0, 0);
+		this.box = new Rectangle(0, 0, 0, 0);
 		this.zoom = 0;
-		this.minZoom = 0;
-		this.maxZoom = 10;
 		this.enabled = false;
 		this.views = [];
 	};
@@ -1218,7 +1348,7 @@ var carte = {};
 	TileController.prototype.addView = function(view) {
 		var index = this.views.indexOf(view);
 		if(index < 0) this.views.push(view);
-		var b = this.bounds;
+		var b = this.clampedBounds;
 		view.setTileSize(MERCATOR_RANGE);
 		view.showTiles(b.ulx, b.uly, b.lrx, b.lry, this.zoom);
 		return this;
@@ -1244,31 +1374,35 @@ var carte = {};
 	};
 
 	TileController.prototype.hasChangedBounds = function(visibleBounds) {
-		var currentBounds = this.bounds;
+		var currentBounds = this.clampedBounds;
 		return currentBounds.ulx != visibleBounds.ulx || 
 			currentBounds.uly != visibleBounds.uly || 
 			currentBounds.lrx != visibleBounds.lrx || 
 			currentBounds.lry != visibleBounds.lry;
 	};
 
+	TileController.prototype.getTileBounds = function(boundsNwLatLng, boundsSeLatLng, zoom, projection) {
+		var tileCoordinateNw = convertPointToTile(boundsNwLatLng, zoom, projection);
+		var tileCoordinateSe = convertPointToTile(boundsSeLatLng, zoom, projection);
+		return new Rectangle(tileCoordinateNw.x, tileCoordinateNw.y, 
+				tileCoordinateSe.x-tileCoordinateNw.x, tileCoordinateSe.y-tileCoordinateNw.y);
+	};
+
 	TileController.prototype.update = function() {
 		var map = this.map;
 		var projection = map.getProjection();
-		var zoom = map.getZoom();
-		zoom = Math.max(this.minZoom, zoom);
-		zoom = Math.min(this.maxZoom, zoom);
-
-		var bounds = map.getBounds(),
+		var zoom = map.getZoom(),
+			bounds = map.getBounds(),
 			boundsNeLatLng = bounds.getNorthEast(),
 			boundsSwLatLng = bounds.getSouthWest(),
 			boundsNwLatLng = new google.maps.LatLng(boundsNeLatLng.lat(), boundsSwLatLng.lng()),
-			boundsSeLatLng = new google.maps.LatLng(boundsSwLatLng.lat(), boundsNeLatLng.lng()),
-			tileCoordinateNw = convertPointToTile(boundsNwLatLng, zoom, projection),
-			tileCoordinateSe = convertPointToTile(boundsSeLatLng, zoom, projection),
-			visibleBounds = new Rectangle(tileCoordinateNw.x, tileCoordinateNw.y, 
-				tileCoordinateSe.x-tileCoordinateNw.x, tileCoordinateSe.y-tileCoordinateNw.y);
+			boundsSeLatLng = new google.maps.LatLng(boundsSwLatLng.lat(), boundsNeLatLng.lng());
 
-		var currentBounds = this.bounds;
+		zoom = Math.max(this.minZoom, zoom);
+		zoom = Math.min(this.maxZoom, zoom);
+
+		var visibleBounds = this.getTileBounds(boundsNwLatLng, boundsSeLatLng, zoom, projection);
+		var currentBounds = this.clampedBounds;
 		var x = Math.min(currentBounds.ulx, visibleBounds.ulx),
 			y = Math.min(currentBounds.uly, visibleBounds.uly),
 			width = Math.max(currentBounds.lrx, visibleBounds.lrx) - x,
@@ -1311,7 +1445,41 @@ var carte = {};
 			this.webGlView.draw();
 		}
 		this.zoom = zoom;
-		this.bounds = visibleBounds;
+		this.clampedBounds = visibleBounds;
+	};
+
+	TileController.prototype.getObjectUnderPoint = function(screenX, screenY) {
+		var bounds = this.map.getBounds();
+		var topLeft = new google.maps.LatLng(
+			bounds.getNorthEast().lat(),
+			bounds.getSouthWest().lng()
+		);
+		var offset = this.map.getProjection().fromLatLngToPoint(topLeft);
+		var scale = Math.pow(2, this.zoom);
+		var offsetX = offset.x * scale;
+		var offsetY = offset.y * scale;
+		var screenScale = 1/Math.pow(2, this.map.getZoom() - this.zoom);
+		var mouseX = screenX * screenScale;
+		var mouseY = screenY * screenScale;
+		var box = this.box;
+		var views = this.views;
+		var column=0, row=0;
+
+		// go through each tile and check where the mouse is
+		for(column=this.clampedBounds.ulx; column<=this.clampedBounds.lrx; column++) {
+			for(row=this.clampedBounds.uly; row<=this.clampedBounds.lry; row++) {
+				box.update(column*MERCATOR_RANGE-offsetX, row*MERCATOR_RANGE-offsetY, MERCATOR_RANGE, MERCATOR_RANGE);
+				if(box.containsPoint(mouseX, mouseY)) {
+					// get the first hit object from the top most layer
+					var outsideMaxZoom = this.zoom == this.map.getZoom();
+					for(var i=views.length-1; i>=0; i--) {
+						var object = views[i].getObjectUnderPointOnTile(screenX, screenY, column, row, this.zoom, outsideMaxZoom);
+						if(object) return object;
+					}
+				}
+			}
+		}
+		return null;
 	};
 
 	window.TileController = TileController;
@@ -1351,43 +1519,45 @@ var carte = {};
 
 	GeoJSONDataSource.prototype._parseFeature = function(feature) {
 		var polygons = [], points = [], lines = [];
-		var coordinates, polygon, linearRing, i;
+		var coordinates, rings, linearRing, i;
 		if(feature.geometry.type == "Polygon") {
 			coordinates = feature.geometry.coordinates;
-			polygon = [];
+			rings = [];
 			for(i=0; i<coordinates.length; i++) {
 				linearRing = coordinates[i];
-				polygon.push(this._parseCoordinates(linearRing));
+				rings.push(this._parseCoordinates(linearRing));
 			}
-			polygons.push(polygon);
+			polygons.push(new Polygon(rings, feature.properties));
 		}
 		else if(feature.geometry.type == "MultiPolygon") {
 			coordinates = feature.geometry.coordinates;
+			var subPolygons = [];
 			for(i=0; i<coordinates.length; i++) {
 				var polygonCoordinates = coordinates[i];
-				polygon = [];
+				rings = [];
 				for(var j=0; j<polygonCoordinates.length; j++) {
 					linearRing = polygonCoordinates[j];
-					polygon.push(this._parseCoordinates(linearRing));
+					rings.push(this._parseCoordinates(linearRing));
 				}
-				polygons.push(polygon);
+				subPolygons.push(new Polygon(rings, feature.properties));
 			}
+			polygons.push(new MultiPolygon(subPolygons, feature.properties));
 		}
 		else if(feature.geometry.type == "LineString") {
-			lines.push(this._parseCoordinates(feature.geometry.coordinates));
+			lines.push(new Line(this._parseCoordinates(feature.geometry.coordinates), feature.properties));
 		}
 		else if(feature.geometry.type == "MultiLineString") {
 			coordinates = feature.geometry.coordinates;
+			var subLines = [];
 			for(i=0; i<coordinates.length; i++) {
 				var lineString = coordinates[i];
-				lines.push(this._parseCoordinates(lineString));
+				subLines.push(new Line(this._parseCoordinates(lineString), feature.properties));
 			}
+			lines.push(new MultiLine(subLines, feature.properties));
 		}
 		else if(feature.geometry.type == "Point") {
 			coordinates = feature.geometry.coordinates;
-			var latLng = new google.maps.LatLng(coordinates[1], coordinates[0]);
-			var point = this.projection.fromLatLngToPoint(latLng);
-			points.push({latLng: latLng, point: point});
+			points.push(new Point(coordinates[1], coordinates[0], this.projection, feature.properties));
 		}
 		return {polygons:polygons, points:points, lines:lines};
 	};
@@ -1395,9 +1565,7 @@ var carte = {};
 	GeoJSONDataSource.prototype._parseCoordinates = function(coordinates) {
 		var points = [];
 		for(var i=0; i<coordinates.length; i++) {
-			var latLng = new google.maps.LatLng(coordinates[i][1], coordinates[i][0]);
-			var point = this.projection.fromLatLngToPoint(latLng);
-			points.push([point.x, point.y]);
+			points.push(new Point(coordinates[i][1], coordinates[i][0], this.projection));
 		}
 		return points;
 	};
@@ -1557,6 +1725,11 @@ var carte = {};
 		this.webGlView.draw();
 	};
 
+	ImageTileView.prototype.getObjectUnderPointOnTile = function(pointX, pointY, tileX, tileY, zoom) {
+		// image tiles are not clickable for now
+		return null;
+	};
+
 	window.ImageTileView = ImageTileView;
 }());
 (function(){
@@ -1589,6 +1762,10 @@ var carte = {};
 		this.fillOpacity = options.fillOpacity;
 		this.strokeColor = options.strokeColor;
 		this.strokeOpacity = options.strokeOpacity;
+		this.raycaster = new THREE.Raycaster();
+		this.mouse = new THREE.Vector2();
+		this.mouse3D = new THREE.Vector3();
+		this.mouseSphere = new THREE.Sphere();
 		this.tiles = {};
 		this.shownTiles = {};
 	};
@@ -1629,8 +1806,12 @@ var carte = {};
 			this.tileProvider.getTile(x, y, z)
 				.then(function(response){
 					self.tiles[url] = response;
+					var features = response.data;
+					var polygons = features.polygons;
+					for(var i=0; i<polygons.length; i++)
+						polygons[i].computeBoundingSphere();
 					if(self.shownTiles[url])
-						self.createFeatures(url, self.tiles[url].data);
+						self.createFeatures(url, features);
 				}, function(reason){
 					console.log(reason);
 				});
@@ -1712,9 +1893,9 @@ var carte = {};
 
 		var points = [];
 		for(var i=0; i<features.points.length; i++) {
-			var point = features.points[i];
+			var p = features.points[i];
 			var markerOptions = {
-				position: {x:point.x, y:point.y, z:100},
+				position: {x:p.point.x, y:p.point.y, z:100},
 				color: {r:1, g:1, b:1},
 				image: this.iconImage,
 				imageName: this.iconImage.url
@@ -1726,6 +1907,63 @@ var carte = {};
 		if(added)
 			this.webGlView.draw();
 	};
+
+	VectorTileView.prototype.getObjectUnderPointOnTile = function(screenX, screenY, tileX, tileY, zoom, sphereCollision) {
+		var url = this.tileProvider.getTileUrl(tileX, tileY, zoom);
+		if(this.tiles[url] && this.tiles[url].polygons) {
+			var tile = this.tiles[url];
+			var scale = 1/Math.pow(2, zoom);
+			// normalize screenX from -1 to 1
+			this.mouse.x = (screenX / this.webGlView.width) * 2 - 1;
+			// normalize screenY from 1 to -1
+			this.mouse.y = -(screenY / this.webGlView.height) * 2 + 1;
+
+			this.raycaster.linePrecision = scale;
+			this.raycaster.setFromCamera(this.mouse, this.webGlView.camera);
+
+			this.mouse3D.copy(this.raycaster.ray.origin);
+			this.mouse3D.setZ(0);
+			this.mouseSphere.set(this.mouse3D, scale);
+
+			// for the sample dataset that we're using, the polygons are too small at lower zoom levels
+			// that they can't be detected by raycast since triangles are too small for intersection.
+			// so we opted for a simple bounding sphere collision instead, but needs accuracy on higher zoom.
+
+			//!TODO: Activate boundingSphere collision dynamically if polygons are too small
+			// or just enable via an optional flag.
+			// if(sphereCollision) {
+				return getIntersectionFromSphere(this.mouseSphere, tile);
+			// }else{
+			// 	return getIntersectionFromRaycast(this.mouse, tile, this.raycaster);
+			// }
+		}
+		return null;
+	};
+
+	function getIntersectionFromSphere(mouseSphere, tile) {
+		var polygons = tile.data.polygons;
+		for(var i=0; i<polygons.length; i++) {
+			if(polygons[i].intersectsSphere(mouseSphere))
+				return polygons[i];
+		}
+		return null;
+	}
+
+	function getIntersectionFromRaycast(mouse, tile, raycaster, scale) {
+		var intersections = raycaster.intersectObject(tile.polygons.shape);
+		var intersection = (intersections.length) > 0 ? intersections[0] : null;
+		if(intersection) {
+			// the outline polygon has twice more vertices than our actual mesh
+			// so we divide the vertex index so we get the corresponding geometry we also hit
+			var index = (intersection instanceof THREE.LineSegments) ? intersection.index / 2 : intersection.index;
+			//!TODO: Perform binary search for performance!
+			for(var i=0; i<tile.data.polygons.length; i++) {
+				if(tile.data.polygons[i].containsIndex(index))
+					return tile.data.polygons[i];
+			}
+		}
+		return null;
+	}
 
 	window.VectorTileView = VectorTileView;
 }());

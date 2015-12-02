@@ -20,27 +20,13 @@
 		// iterate every line which should contain the following array:
 		// [linestring or array of points]
 		for(var i=0; i<features.length; i++){
-			var polygon  = features[i];
-			for(var j=0; j<polygon.length; j++) {
-				var coordinate = polygon[j];
-				var point = {x: coordinate[0], y: coordinate[1]};
-
-				var vertex1 = new THREE.Vector3(point.x, point.y, 1);
-				line.vertices.push(vertex1);
-
-				var coord0, point0, vertex0;
-				if(j == polygon.length-1) {
-					coord0 = polygon[0];
-					point0 = {x: coord0[0], y: coord0[1]};
-					vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
-					line.vertices.push(vertex0);
-				}else{
-					coord0 = polygon[j+1];
-					point0 = {x: coord0[0], y: coord0[1]};
-					vertex0 = new THREE.Vector3(point0.x, point0.y, 1);
-					line.vertices.push(vertex0);
-				}
-			}	
+			var geom  = features[i];
+			if(geom instanceof Line) {
+				createLineVertices(geom, line);
+			}else if(geom instanceof MultiLine) {
+				for(var index in geom.lines) 
+					createLineVertices(geom.lines[index], line);
+			}
 		}
 
 		var linePolygon = new THREE.LineSegments(line, new THREE.LineBasicMaterial({
@@ -54,6 +40,20 @@
 
 		return linePolygon;
 	};
+
+	function createLineVertices(obj, line) {
+		for(var pointIndex=0; j<obj.points.length; j++) {
+			var p = obj.points[pointIndex];
+			line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+			if(j == obj.points.length-1) {
+				p = obj.points[0];
+				line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+			}else{
+				p = obj.points[j+1];
+				line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
+			}
+		}	
+	}
 
 	window.LineRenderer = LineRenderer;
 }());
