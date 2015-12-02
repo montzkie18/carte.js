@@ -18,7 +18,7 @@
 		this.ulx = x;
 		this.uly = y;
 		this.lrx = x+width;
-		this.lry = y+width;
+		this.lry = y+height;
 	};
 
 	Rectangle.prototype.containsPoint = function(x, y) {
