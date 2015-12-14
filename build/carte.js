@@ -986,7 +986,7 @@ var carte = {};
 		return props[0];
 	})();
 
-	var WebGLView = function(map) {
+	var WebGLView = function(map, options) {
 		this._map = map;
 		this.camera = new THREE.OrthographicCamera(0, 255, 0, 255, -3000, 3000);
 		this.camera.position.z = 1000;
@@ -1007,6 +1007,9 @@ var carte = {};
 		this.animationFrame = null;
 		this.objectRenderers = [];
 		this.numMasks = 0;
+
+		options = options ? options : {};
+		this.maskAlwaysEnabled = options.maskAlwaysEnabled;
 
 		this.update = function() {
 			var map = this.map;
@@ -1057,7 +1060,7 @@ var carte = {};
 			this.update();
 
 			var context = this.context, renderer = this.renderer;
-			var maskEnabled = this.numMasks > 0;
+			var maskEnabled = this.numMasks > 0 || this.maskAlwaysEnabled;
 
 			this.renderer.setClearColor(0xffffff, 0);
 			this.renderer.clear(true, true, true);
@@ -1233,6 +1236,18 @@ var carte = {};
 	WebGLView.prototype.destroyMask = function(geometry) {
 		delete geometry.shape;
 		delete geometry.outline;
+	};
+
+	WebGLView.prototype.hitsMask = function(x, y) {
+		if(!this.raycaster)
+			this.raycaster = new THREE.Raycaster();
+		if(!this.mouse)
+			this.mouse = new THREE.Vector2();
+		this.mouse.x = (x / this.width) * 2 - 1;
+		this.mouse.y = -(y / this.height) * 2 + 1;
+		this.raycaster.setFromCamera(this.mouse, this.camera);
+		var intersections = this.raycaster.intersectObjects(this.sceneMask.children);
+		return intersections.length > 0;
 	};
 
 	window.WebGLView = WebGLView;
@@ -1485,170 +1500,6 @@ var carte = {};
 	window.TileController = TileController;
 }());
 
-(function(){
-	var GeoJSONDataSource = function(url, projection){
-		this.url = url;
-		this.projection = projection;
-		this.fileExtension = "json";
-		this.responseType = "json";
-	};
-
-	GeoJSONDataSource.prototype.parse = function(data) {
-		var featureCollection = {polygons:[], points:[], lines:[]};
-		var self = this;
-		var extractFeatures = function(data) {
-			var feature = self._parseFeature(data);
-			if(feature.polygons.length > 0)
-				featureCollection.polygons = featureCollection.polygons.concat(feature.polygons);
-			if(feature.points.length > 0)
-				featureCollection.points = featureCollection.points.concat(feature.points);
-			if(feature.lines.length > 0)
-				featureCollection.lines = featureCollection.lines.concat(feature.lines);
-		};
-		if(data) {
-			if(data.type == "FeatureCollection") {
-				var features = data.features;
-				for(var i=0; i<features.length; i++)
-					extractFeatures(features[i]);
-			}else if(data.type == "Feature") {
-				extractFeatures(data);
-			}
-		}
-		return featureCollection;
-	};
-
-	GeoJSONDataSource.prototype._parseFeature = function(feature) {
-		var polygons = [], points = [], lines = [];
-		var coordinates, rings, linearRing, i;
-		if(feature.geometry.type == "Polygon") {
-			coordinates = feature.geometry.coordinates;
-			rings = [];
-			for(i=0; i<coordinates.length; i++) {
-				linearRing = coordinates[i];
-				rings.push(this._parseCoordinates(linearRing));
-			}
-			polygons.push(new Polygon(rings, feature.properties));
-		}
-		else if(feature.geometry.type == "MultiPolygon") {
-			coordinates = feature.geometry.coordinates;
-			var subPolygons = [];
-			for(i=0; i<coordinates.length; i++) {
-				var polygonCoordinates = coordinates[i];
-				rings = [];
-				for(var j=0; j<polygonCoordinates.length; j++) {
-					linearRing = polygonCoordinates[j];
-					rings.push(this._parseCoordinates(linearRing));
-				}
-				subPolygons.push(new Polygon(rings, feature.properties));
-			}
-			polygons.push(new MultiPolygon(subPolygons, feature.properties));
-		}
-		else if(feature.geometry.type == "LineString") {
-			lines.push(new Line(this._parseCoordinates(feature.geometry.coordinates), feature.properties));
-		}
-		else if(feature.geometry.type == "MultiLineString") {
-			coordinates = feature.geometry.coordinates;
-			var subLines = [];
-			for(i=0; i<coordinates.length; i++) {
-				var lineString = coordinates[i];
-				subLines.push(new Line(this._parseCoordinates(lineString), feature.properties));
-			}
-			lines.push(new MultiLine(subLines, feature.properties));
-		}
-		else if(feature.geometry.type == "Point") {
-			coordinates = feature.geometry.coordinates;
-			points.push(new Point(coordinates[1], coordinates[0], this.projection, feature.properties));
-		}
-		return {polygons:polygons, points:points, lines:lines};
-	};
-
-	GeoJSONDataSource.prototype._parseCoordinates = function(coordinates) {
-		var points = [];
-		for(var i=0; i<coordinates.length; i++) {
-			points.push(new Point(coordinates[i][1], coordinates[i][0], this.projection));
-		}
-		return points;
-	};
-
-	window.GeoJSONDataSource = GeoJSONDataSource;
-}());
-(function(){
-	var ImageDataSource = function(url){
-		this.url = url;
-		this.fileExtension = "png";
-		this.responseType = "blob";
-	};
-
-	ImageDataSource.prototype.parse = function(data){
-		return data;
-	};
-
-	window.ImageDataSource = ImageDataSource;
-}());
-(function(){
-	/**
-	 * Sites Typed Array - Data Source
-	 * Format: Uint32Array[i*4] where i is number of sites
-	 * array[0] = latitude
-	 * array[1] = longitude
-	 * array[2] = cluster count. if > 1, then it's a cluster. if == 1, then it's a point.
-	 * array[3] = site id
-	 */
-	var STADataSource = function(url, projection){
-		this.url = url;
-		this.projection = projection;
-		this.fileExtension = "";
-		this.responseType = "arraybuffer";
-	};
-
-	STADataSource.prototype.parse = function(arraybuffer) {
-		var projection = this.projection;
-		var data = new Uint32Array(arraybuffer);
-		var markers = [];
-		for (var i = 0; i < data.length; i+=4) {
-			var latLng = new google.maps.LatLng(data[i]/1000000.0, data[i+1]/1000000.0);
-			var point = projection.fromLatLngToPoint(latLng);
-			var count = data[i+2];
-			var id  = data[i+3];
-			markers.push({id: id, count: count, latLng: latLng, point: point});
-		}
-		return markers;
-	};
-
-	window.STADataSource = STADataSource;
-}());
-(function(){
-	var TileProvider = function(dataSource, $http, $q) {
-		this.dataSource = dataSource;
-		this.$http = $http;
-		this.$q = $q;
-		this.tiles = {};
-	};
-
-	TileProvider.prototype.getTileUrl = function(x, y, z) {
-		return this.dataSource.url+"/"+z+"/"+x+"/"+y+"."+this.dataSource.fileExtension;
-	};
-
-	TileProvider.prototype.getTile = function(x, y, z) {
-		var deferred = this.$q.defer();
-		var url = this.getTileUrl(x, y, z);
-		if(this.tiles[url]){
-			deferred.resolve({url:url, data:this.tiles[url]});
-		}else{
-			var self = this;
-			this.$http.get(url, {responseType: this.dataSource.responseType})
-				.then(function(response){
-					self.tiles[url] = self.dataSource.parse(response.data);
-					deferred.resolve({url:url, data:self.tiles[url]});
-				}, function(reason){
-					deferred.reject(reason);
-				});
-		}
-		return deferred.promise;
-	};
-
-	window.TileProvider = TileProvider;
-}());
 (function(){
 	var ImageTileView = function(tileProvider, webGlView) {
 		this.tileProvider = tileProvider;
@@ -1966,5 +1817,169 @@ var carte = {};
 	}
 
 	window.VectorTileView = VectorTileView;
+}());
+(function(){
+	var GeoJSONDataSource = function(url, projection){
+		this.url = url;
+		this.projection = projection;
+		this.fileExtension = "json";
+		this.responseType = "json";
+	};
+
+	GeoJSONDataSource.prototype.parse = function(data) {
+		var featureCollection = {polygons:[], points:[], lines:[]};
+		var self = this;
+		var extractFeatures = function(data) {
+			var feature = self._parseFeature(data);
+			if(feature.polygons.length > 0)
+				featureCollection.polygons = featureCollection.polygons.concat(feature.polygons);
+			if(feature.points.length > 0)
+				featureCollection.points = featureCollection.points.concat(feature.points);
+			if(feature.lines.length > 0)
+				featureCollection.lines = featureCollection.lines.concat(feature.lines);
+		};
+		if(data) {
+			if(data.type == "FeatureCollection") {
+				var features = data.features;
+				for(var i=0; i<features.length; i++)
+					extractFeatures(features[i]);
+			}else if(data.type == "Feature") {
+				extractFeatures(data);
+			}
+		}
+		return featureCollection;
+	};
+
+	GeoJSONDataSource.prototype._parseFeature = function(feature) {
+		var polygons = [], points = [], lines = [];
+		var coordinates, rings, linearRing, i;
+		if(feature.geometry.type == "Polygon") {
+			coordinates = feature.geometry.coordinates;
+			rings = [];
+			for(i=0; i<coordinates.length; i++) {
+				linearRing = coordinates[i];
+				rings.push(this._parseCoordinates(linearRing));
+			}
+			polygons.push(new Polygon(rings, feature.properties));
+		}
+		else if(feature.geometry.type == "MultiPolygon") {
+			coordinates = feature.geometry.coordinates;
+			var subPolygons = [];
+			for(i=0; i<coordinates.length; i++) {
+				var polygonCoordinates = coordinates[i];
+				rings = [];
+				for(var j=0; j<polygonCoordinates.length; j++) {
+					linearRing = polygonCoordinates[j];
+					rings.push(this._parseCoordinates(linearRing));
+				}
+				subPolygons.push(new Polygon(rings, feature.properties));
+			}
+			polygons.push(new MultiPolygon(subPolygons, feature.properties));
+		}
+		else if(feature.geometry.type == "LineString") {
+			lines.push(new Line(this._parseCoordinates(feature.geometry.coordinates), feature.properties));
+		}
+		else if(feature.geometry.type == "MultiLineString") {
+			coordinates = feature.geometry.coordinates;
+			var subLines = [];
+			for(i=0; i<coordinates.length; i++) {
+				var lineString = coordinates[i];
+				subLines.push(new Line(this._parseCoordinates(lineString), feature.properties));
+			}
+			lines.push(new MultiLine(subLines, feature.properties));
+		}
+		else if(feature.geometry.type == "Point") {
+			coordinates = feature.geometry.coordinates;
+			points.push(new Point(coordinates[1], coordinates[0], this.projection, feature.properties));
+		}
+		return {polygons:polygons, points:points, lines:lines};
+	};
+
+	GeoJSONDataSource.prototype._parseCoordinates = function(coordinates) {
+		var points = [];
+		for(var i=0; i<coordinates.length; i++) {
+			points.push(new Point(coordinates[i][1], coordinates[i][0], this.projection));
+		}
+		return points;
+	};
+
+	window.GeoJSONDataSource = GeoJSONDataSource;
+}());
+(function(){
+	var ImageDataSource = function(url){
+		this.url = url;
+		this.fileExtension = "png";
+		this.responseType = "blob";
+	};
+
+	ImageDataSource.prototype.parse = function(data){
+		return data;
+	};
+
+	window.ImageDataSource = ImageDataSource;
+}());
+(function(){
+	/**
+	 * Sites Typed Array - Data Source
+	 * Format: Uint32Array[i*4] where i is number of sites
+	 * array[0] = latitude
+	 * array[1] = longitude
+	 * array[2] = cluster count. if > 1, then it's a cluster. if == 1, then it's a point.
+	 * array[3] = site id
+	 */
+	var STADataSource = function(url, projection){
+		this.url = url;
+		this.projection = projection;
+		this.fileExtension = "";
+		this.responseType = "arraybuffer";
+	};
+
+	STADataSource.prototype.parse = function(arraybuffer) {
+		var projection = this.projection;
+		var data = new Uint32Array(arraybuffer);
+		var markers = [];
+		for (var i = 0; i < data.length; i+=4) {
+			var latLng = new google.maps.LatLng(data[i]/1000000.0, data[i+1]/1000000.0);
+			var point = projection.fromLatLngToPoint(latLng);
+			var count = data[i+2];
+			var id  = data[i+3];
+			markers.push({id: id, count: count, latLng: latLng, point: point});
+		}
+		return markers;
+	};
+
+	window.STADataSource = STADataSource;
+}());
+(function(){
+	var TileProvider = function(dataSource, $http, $q) {
+		this.dataSource = dataSource;
+		this.$http = $http;
+		this.$q = $q;
+		this.tiles = {};
+	};
+
+	TileProvider.prototype.getTileUrl = function(x, y, z) {
+		return this.dataSource.url+"/"+z+"/"+x+"/"+y+"."+this.dataSource.fileExtension;
+	};
+
+	TileProvider.prototype.getTile = function(x, y, z) {
+		var deferred = this.$q.defer();
+		var url = this.getTileUrl(x, y, z);
+		if(this.tiles[url]){
+			deferred.resolve({url:url, data:this.tiles[url]});
+		}else{
+			var self = this;
+			this.$http.get(url, {responseType: this.dataSource.responseType})
+				.then(function(response){
+					self.tiles[url] = self.dataSource.parse(response.data);
+					deferred.resolve({url:url, data:self.tiles[url]});
+				}, function(reason){
+					deferred.reject(reason);
+				});
+		}
+		return deferred.promise;
+	};
+
+	window.TileProvider = TileProvider;
 }());
 //# sourceMappingURL=carte.js.map

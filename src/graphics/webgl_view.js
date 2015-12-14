@@ -17,7 +17,7 @@
 		return props[0];
 	})();
 
-	var WebGLView = function(map) {
+	var WebGLView = function(map, options) {
 		this._map = map;
 		this.camera = new THREE.OrthographicCamera(0, 255, 0, 255, -3000, 3000);
 		this.camera.position.z = 1000;
@@ -38,6 +38,9 @@
 		this.animationFrame = null;
 		this.objectRenderers = [];
 		this.numMasks = 0;
+
+		options = options ? options : {};
+		this.maskAlwaysEnabled = options.maskAlwaysEnabled;
 
 		this.update = function() {
 			var map = this.map;
@@ -88,7 +91,7 @@
 			this.update();
 
 			var context = this.context, renderer = this.renderer;
-			var maskEnabled = this.numMasks > 0;
+			var maskEnabled = this.numMasks > 0 || this.maskAlwaysEnabled;
 
 			this.renderer.setClearColor(0xffffff, 0);
 			this.renderer.clear(true, true, true);
@@ -264,6 +267,18 @@
 	WebGLView.prototype.destroyMask = function(geometry) {
 		delete geometry.shape;
 		delete geometry.outline;
+	};
+
+	WebGLView.prototype.hitsMask = function(x, y) {
+		if(!this.raycaster)
+			this.raycaster = new THREE.Raycaster();
+		if(!this.mouse)
+			this.mouse = new THREE.Vector2();
+		this.mouse.x = (x / this.width) * 2 - 1;
+		this.mouse.y = -(y / this.height) * 2 + 1;
+		this.raycaster.setFromCamera(this.mouse, this.camera);
+		var intersections = this.raycaster.intersectObjects(this.sceneMask.children);
+		return intersections.length > 0;
 	};
 
 	window.WebGLView = WebGLView;
