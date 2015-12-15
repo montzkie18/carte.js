@@ -33,10 +33,6 @@
 		this.tileSize = tileSize;
 	};
 
-	VectorTileView.prototype.setTileSize = function(tileSize) {
-		this.tileSize = tileSize;
-	};
-
 	VectorTileView.prototype.showTiles = function(ulx, uly, lrx, lry, zoom) {
 		for(var column=ulx; column<=lrx; column++) {
 			for(var row=uly; row<=lry; row++) {
