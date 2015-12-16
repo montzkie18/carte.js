@@ -121,6 +121,7 @@
 				this.tiles[url].points = null;
 			}
 		}
+		for(var url in this.shownTiles) this.shownTiles[url] = false;
 		this.webGlView.draw();
 	};
 

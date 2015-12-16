@@ -3,6 +3,7 @@
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
 		this.tiles = {};
+		this.shownTiles = {};
 	};
 
 	ImageTileView.prototype.setTileSize = function(tileSize) {
@@ -20,6 +21,9 @@
 
 	ImageTileView.prototype.showTile = function(x, y, z) {
 		var url = this.tileProvider.getTileUrl(x, y, z);
+		if(this.shownTiles[url]) return;
+		this.shownTiles[url] = true;
+
 		if(this.tiles[url]) {
 			if(!this.tiles[url].geometry) {
 				var scaleFactor = Math.pow(2, z);
@@ -48,8 +52,10 @@
 						image: self.tiles[url].data,
 						imageName: url
 					};
-					self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
-					self.webGlView.draw();
+					if(self.shownTiles[url]) {
+						self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
+						self.webGlView.draw();
+					}
 				}, function(reason){
 					//console.log(reason);
 				});
@@ -58,6 +64,7 @@
 
 	ImageTileView.prototype.hideTile = function(x, y, z) {
 		var url = this.tileProvider.getTileUrl(x, y, z);
+		this.shownTiles[url] = false;
 		if(this.tiles[url] && this.tiles[url].geometry) {
 			this.webGlView.removeSprite(this.tiles[url].geometry);
 			this.tiles[url].geometry = null;
@@ -71,6 +78,7 @@
 				this.tiles[url].geometry = null;
 			}
 		}
+		for(var url in this.shownTiles) this.shownTiles[url] = false;
 		this.webGlView.draw();
 	};
 

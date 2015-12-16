@@ -1473,9 +1473,9 @@ var carte = {};
 		var scale = Math.pow(2, this.zoom);
 		var offsetX = offset.x * scale;
 		var offsetY = offset.y * scale;
-		var screenScale = 1/Math.pow(2, this.map.getZoom() - this.zoom);
-		var mouseX = screenX * screenScale;
-		var mouseY = screenY * screenScale;
+		var worldScale = 1/Math.pow(2, this.map.getZoom() - this.zoom);
+		var worldX = screenX * worldScale;
+		var worldY = screenY * worldScale;
 		var box = this.box;
 		var views = this.views;
 		var column=0, row=0;
@@ -1484,7 +1484,7 @@ var carte = {};
 		for(column=this.clampedBounds.ulx; column<=this.clampedBounds.lrx; column++) {
 			for(row=this.clampedBounds.uly; row<=this.clampedBounds.lry; row++) {
 				box.update(column*MERCATOR_RANGE-offsetX, row*MERCATOR_RANGE-offsetY, MERCATOR_RANGE, MERCATOR_RANGE);
-				if(box.containsPoint(mouseX, mouseY)) {
+				if(box.containsPoint(worldX, worldY)) {
 					// get the first hit object from the top most layer
 					var outsideMaxZoom = this.zoom == this.map.getZoom();
 					for(var i=views.length-1; i>=0; i--) {
@@ -1669,6 +1669,7 @@ var carte = {};
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
 		this.tiles = {};
+		this.shownTiles = {};
 	};
 
 	ImageTileView.prototype.setTileSize = function(tileSize) {
@@ -1686,6 +1687,9 @@ var carte = {};
 
 	ImageTileView.prototype.showTile = function(x, y, z) {
 		var url = this.tileProvider.getTileUrl(x, y, z);
+		if(this.shownTiles[url]) return;
+		this.shownTiles[url] = true;
+
 		if(this.tiles[url]) {
 			if(!this.tiles[url].geometry) {
 				var scaleFactor = Math.pow(2, z);
@@ -1714,8 +1718,10 @@ var carte = {};
 						image: self.tiles[url].data,
 						imageName: url
 					};
-					self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
-					self.webGlView.draw();
+					if(self.shownTiles[url]) {
+						self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
+						self.webGlView.draw();
+					}
 				}, function(reason){
 					//console.log(reason);
 				});
@@ -1724,6 +1730,7 @@ var carte = {};
 
 	ImageTileView.prototype.hideTile = function(x, y, z) {
 		var url = this.tileProvider.getTileUrl(x, y, z);
+		this.shownTiles[url] = false;
 		if(this.tiles[url] && this.tiles[url].geometry) {
 			this.webGlView.removeSprite(this.tiles[url].geometry);
 			this.tiles[url].geometry = null;
@@ -1737,6 +1744,7 @@ var carte = {};
 				this.tiles[url].geometry = null;
 			}
 		}
+		for(var url in this.shownTiles) this.shownTiles[url] = false;
 		this.webGlView.draw();
 	};
 
@@ -1877,6 +1885,7 @@ var carte = {};
 				this.tiles[url].points = null;
 			}
 		}
+		for(var url in this.shownTiles) this.shownTiles[url] = false;
 		this.webGlView.draw();
 	};
 

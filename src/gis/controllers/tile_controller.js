@@ -146,9 +146,9 @@
 		var scale = Math.pow(2, this.zoom);
 		var offsetX = offset.x * scale;
 		var offsetY = offset.y * scale;
-		var screenScale = 1/Math.pow(2, this.map.getZoom() - this.zoom);
-		var mouseX = screenX * screenScale;
-		var mouseY = screenY * screenScale;
+		var worldScale = 1/Math.pow(2, this.map.getZoom() - this.zoom);
+		var worldX = screenX * worldScale;
+		var worldY = screenY * worldScale;
 		var box = this.box;
 		var views = this.views;
 		var column=0, row=0;
@@ -157,7 +157,7 @@
 		for(column=this.clampedBounds.ulx; column<=this.clampedBounds.lrx; column++) {
 			for(row=this.clampedBounds.uly; row<=this.clampedBounds.lry; row++) {
 				box.update(column*MERCATOR_RANGE-offsetX, row*MERCATOR_RANGE-offsetY, MERCATOR_RANGE, MERCATOR_RANGE);
-				if(box.containsPoint(mouseX, mouseY)) {
+				if(box.containsPoint(worldX, worldY)) {
 					// get the first hit object from the top most layer
 					var outsideMaxZoom = this.zoom == this.map.getZoom();
 					for(var i=views.length-1; i>=0; i--) {
