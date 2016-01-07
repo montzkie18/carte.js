@@ -70,6 +70,10 @@ var carte = {};
 		return this.sphere.intersectsSphere(sphere);
 	};
 
+	MultiPolygon.prototype.getCenter = function() {
+		return this.sphere.center;
+	};
+
 	window.MultiPolygon = MultiPolygon;
 }());
 (function(){
