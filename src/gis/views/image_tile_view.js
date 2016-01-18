@@ -1,7 +1,8 @@
 (function(){
-	var ImageTileView = function(tileProvider, webGlView) {
+	var ImageTileView = function(tileProvider, webGlView, webServices) {
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
+		this.webServices = webServices;
 		this.tiles = {};
 		this.shownTiles = {};
 	};
@@ -39,25 +40,33 @@
 				this.webGlView.draw();
 			}
 		}else{
-			var self = this;
-			this.tileProvider.getTile(x, y, z)
-				.then(function(response){
-					self.tiles[url] = response;
-					var scaleFactor = Math.pow(2, z);
-					var spriteSize = self.tileSize / scaleFactor;
-					var spriteOptions = {
-						position: {x:x*spriteSize, y:y*spriteSize, z:z},
-						width: spriteSize,
-						height: spriteSize,
-						image: self.tiles[url].data,
-						imageName: url
-					};
-					if(self.shownTiles[url]) {
-						self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
-						self.webGlView.draw();
+			this.webServices.checkLayerTile(url)
+				.then(function (response) {
+					//console.log('Response: ', response);
+					if (response.data.is_tile_exist) {
+						var self = this;
+						this.tileProvider.getTile(x, y, z)
+							.then(function(response){
+								self.tiles[url] = response;
+								var scaleFactor = Math.pow(2, z);
+								var spriteSize = self.tileSize / scaleFactor;
+								var spriteOptions = {
+									position: {x:x*spriteSize, y:y*spriteSize, z:z},
+									width: spriteSize,
+									height: spriteSize,
+									image: self.tiles[url].data,
+									imageName: url
+								};
+								if(self.shownTiles[url]) {
+									self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
+									self.webGlView.draw();
+								}
+							}, function(reason){
+								//console.log(reason);
+							});
 					}
-				}, function(reason){
-					//console.log(reason);
+				}, function (reason) {
+					console.log(reason);
 				});
 		}
 	};
