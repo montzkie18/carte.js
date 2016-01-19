@@ -13,7 +13,7 @@
 			| (Math.floor(255.0*Math.random()) & 0xFF);
 	}
 
-	var VectorTileView = function(tileProvider, webGlView, options) {
+	var VectorTileView = function(tileProvider, webGlView, options, webServices) {
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
 		this.iconImage = options.iconImage;
@@ -21,6 +21,7 @@
 		this.fillOpacity = options.fillOpacity;
 		this.strokeColor = options.strokeColor;
 		this.strokeOpacity = options.strokeOpacity;
+		this.webServices = webServices;
 		this.raycaster = new THREE.Raycaster();
 		this.mouse = new THREE.Vector2();
 		this.mouse3D = new THREE.Vector3();
@@ -58,16 +59,23 @@
 				this.createFeatures(url, this.tiles[url].data);
 		}else{
 			var self = this;
-			this.tileProvider.getTile(x, y, z)
-				.then(function(response){
-					self.tiles[url] = response;
-					var features = response.data;
-					var polygons = features.polygons;
-					for(var i=0; i<polygons.length; i++)
-						polygons[i].computeBoundingSphere();
-					if(self.shownTiles[url])
-						self.createFeatures(url, features);
-				}, function(reason){
+			self.webServices.checkLayerTile(url)
+				.then(function (response) {
+					if (response.data.is_tile_exist) {
+						self.tileProvider.getTile(x, y, z)
+							.then(function(response){
+								self.tiles[url] = response;
+								var features = response.data;
+								var polygons = features.polygons;
+								for(var i=0; i<polygons.length; i++)
+									polygons[i].computeBoundingSphere();
+								if(self.shownTiles[url])
+									self.createFeatures(url, features);
+							}, function(reason){
+								console.log(reason);
+							});
+					}
+				}, function (reason) {
 					console.log(reason);
 				});
 		}

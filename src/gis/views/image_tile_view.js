@@ -40,12 +40,12 @@
 				this.webGlView.draw();
 			}
 		}else{
-			this.webServices.checkLayerTile(url)
+			var self = this;
+			self.webServices.checkLayerTile(url)
 				.then(function (response) {
 					//console.log('Response: ', response);
 					if (response.data.is_tile_exist) {
-						var self = this;
-						this.tileProvider.getTile(x, y, z)
+						self.tileProvider.getTile(x, y, z)
 							.then(function(response){
 								self.tiles[url] = response;
 								var scaleFactor = Math.pow(2, z);
