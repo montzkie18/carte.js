@@ -162,7 +162,8 @@
 				position: {x:p.point.x, y:p.point.y, z:100},
 				color: {r:1, g:1, b:1},
 				image: this.iconImage,
-				imageName: this.iconImage.url
+				imageName: this.iconImage.url,
+				site: p.properties
 			};
 			points.push(this.webGlView.addPoint(markerOptions));
 		}
