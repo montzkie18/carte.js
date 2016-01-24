@@ -81,6 +81,7 @@ var carte = {};
 		this.latLng = new google.maps.LatLng(lat, lng);
 		this.point = projection.fromLatLngToPoint(this.latLng);
 		this.properties = properties ? properties : {};
+		this.properties.latLng = this.latLng;
 	};
 
 	window.Point = Point;
@@ -1669,9 +1670,10 @@ var carte = {};
 	window.TileProvider = TileProvider;
 }());
 (function(){
-	var ImageTileView = function(tileProvider, webGlView) {
+	var ImageTileView = function(tileProvider, webGlView, webServices) {
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
+		this.webServices = webServices;
 		this.tiles = {};
 		this.shownTiles = {};
 	};
@@ -1710,24 +1712,32 @@ var carte = {};
 			}
 		}else{
 			var self = this;
-			this.tileProvider.getTile(x, y, z)
-				.then(function(response){
-					self.tiles[url] = response;
-					var scaleFactor = Math.pow(2, z);
-					var spriteSize = self.tileSize / scaleFactor;
-					var spriteOptions = {
-						position: {x:x*spriteSize, y:y*spriteSize, z:z},
-						width: spriteSize,
-						height: spriteSize,
-						image: self.tiles[url].data,
-						imageName: url
-					};
-					if(self.shownTiles[url]) {
-						self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
-						self.webGlView.draw();
+			self.webServices.checkLayerTile(url)
+				.then(function (response) {
+					//console.log('Response: ', response);
+					if (response.data.is_tile_exist) {
+						self.tileProvider.getTile(x, y, z)
+							.then(function(response){
+								self.tiles[url] = response;
+								var scaleFactor = Math.pow(2, z);
+								var spriteSize = self.tileSize / scaleFactor;
+								var spriteOptions = {
+									position: {x:x*spriteSize, y:y*spriteSize, z:z},
+									width: spriteSize,
+									height: spriteSize,
+									image: self.tiles[url].data,
+									imageName: url
+								};
+								if(self.shownTiles[url]) {
+									self.tiles[url].geometry = self.webGlView.addSprite(spriteOptions);
+									self.webGlView.draw();
+								}
+							}, function(reason){
+								//console.log(reason);
+							});
 					}
-				}, function(reason){
-					//console.log(reason);
+				}, function (reason) {
+					console.log(reason);
 				});
 		}
 	};
@@ -1781,7 +1791,7 @@ var carte = {};
 			| (Math.floor(255.0*Math.random()) & 0xFF);
 	}
 
-	var VectorTileView = function(tileProvider, webGlView, options) {
+	var VectorTileView = function(tileProvider, webGlView, options, webServices) {
 		this.tileProvider = tileProvider;
 		this.webGlView = webGlView;
 		this.iconImage = options.iconImage;
@@ -1789,6 +1799,7 @@ var carte = {};
 		this.fillOpacity = options.fillOpacity;
 		this.strokeColor = options.strokeColor;
 		this.strokeOpacity = options.strokeOpacity;
+		this.webServices = webServices;
 		this.raycaster = new THREE.Raycaster();
 		this.mouse = new THREE.Vector2();
 		this.mouse3D = new THREE.Vector3();
@@ -1826,16 +1837,23 @@ var carte = {};
 				this.createFeatures(url, this.tiles[url].data);
 		}else{
 			var self = this;
-			this.tileProvider.getTile(x, y, z)
-				.then(function(response){
-					self.tiles[url] = response;
-					var features = response.data;
-					var polygons = features.polygons;
-					for(var i=0; i<polygons.length; i++)
-						polygons[i].computeBoundingSphere();
-					if(self.shownTiles[url])
-						self.createFeatures(url, features);
-				}, function(reason){
+			self.webServices.checkLayerTile(url)
+				.then(function (response) {
+					if (response.data.is_tile_exist) {
+						self.tileProvider.getTile(x, y, z)
+							.then(function(response){
+								self.tiles[url] = response;
+								var features = response.data;
+								var polygons = features.polygons;
+								for(var i=0; i<polygons.length; i++)
+									polygons[i].computeBoundingSphere();
+								if(self.shownTiles[url])
+									self.createFeatures(url, features);
+							}, function(reason){
+								console.log(reason);
+							});
+					}
+				}, function (reason) {
 					console.log(reason);
 				});
 		}
@@ -1922,7 +1940,8 @@ var carte = {};
 				position: {x:p.point.x, y:p.point.y, z:100},
 				color: {r:1, g:1, b:1},
 				image: this.iconImage,
-				imageName: this.iconImage.url
+				imageName: this.iconImage.url,
+				site: p.properties
 			};
 			points.push(this.webGlView.addPoint(markerOptions));
 		}
