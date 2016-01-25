@@ -4,6 +4,7 @@
 		this.point = projection.fromLatLngToPoint(this.latLng);
 		this.properties = properties ? properties : {};
 		this.properties.latLng = this.latLng;
+		this.properties.point = this.point;
 	};
 
 	window.Point = Point;

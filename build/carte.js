@@ -4,166 +4,6 @@
 // declare package names
 var carte = {};
 (function(){
-	var Geom = function() {};
-
-	Geom.prototype.setStart = function(value) {
-		this.startIndex = value;
-	};
-
-	Geom.prototype.setEnd = function(value) {
-		this.endIndex = value;
-	};
-
-	Geom.prototype.containsIndex = function(value) {
-		return this.startIndex <= value && value <= this.endIndex;
-	};
-
-	window.Geom = Geom;
-}());
-(function(){
-	var Line = function(points, properties) {
-		this.points = points;
-		this.properties = properties;
-	};
-
-	Line.prototype = new Geom();
-	Line.prototype.constructor = Line;
-
-	window.Line = Line;
-}());
-(function(){
-	var MultiLine = function(lines, properties) {
-		this.lines = lines;
-		this.properties = properties;
-	};
-
-	MultiLine.prototype = new Geom();
-	MultiLine.prototype.constructor = MultiLine;
-
-	window.MultiLine = MultiLine;
-}());
-(function(){
-	var MultiPolygon = function(polygons, properties) {
-		this.polygons = polygons;
-		this.properties  =properties;
-	};
-
-	MultiPolygon.prototype = new Geom();
-	MultiPolygon.prototype.constructor = MultiPolygon;
-
-	MultiPolygon.prototype.computeBoundingSphere = function() {
-		if(!this.sphere) this.sphere = new THREE.Sphere();
-		var points = [];
-		for(var i=0; i<this.polygons.length; i++) {
-			var polygon = this.polygons[i];
-			if(polygon.rings.length > 0) {
-				var ring = polygon.rings[0];
-				for(var j=0; j<ring.length; j++) {
-					points.push(new THREE.Vector3(ring[j].point.x, ring[j].point.y, 0));
-				}
-			}
-		}
-		this.sphere.setFromPoints(points);
-	};
-
-	MultiPolygon.prototype.intersectsSphere = function(sphere) {
-		return this.sphere.intersectsSphere(sphere);
-	};
-
-	MultiPolygon.prototype.getCenter = function() {
-		return this.sphere.center;
-	};
-
-	window.MultiPolygon = MultiPolygon;
-}());
-(function(){
-	var Point = function(lat, lng, projection, properties) {
-		this.latLng = new google.maps.LatLng(lat, lng);
-		this.point = projection.fromLatLngToPoint(this.latLng);
-		this.properties = properties ? properties : {};
-		this.properties.latLng = this.latLng;
-	};
-
-	window.Point = Point;
-}());
-(function(){
-	var Polygon = function(rings, properties) {
-		this.rings = rings;
-		this.properties = properties;
-		this.sphere = new THREE.Sphere();
-	};
-
-	Polygon.prototype = new Geom();
-	Polygon.prototype.constructor = Polygon;
-
-	Polygon.prototype.computeBoundingSphere = function() {
-		if(this.rings.length > 0) {
-			var ring = this.rings[0];
-			var points = [];
-			for(var i=0; i<ring.length; i++) {
-				points.push(new THREE.Vector3(ring[i].point.x, ring[i].point.y, 0));
-			}
-			this.sphere.setFromPoints(points);
-		}
-	};
-
-	Polygon.prototype.intersectsSphere = function(sphere) {
-		return this.sphere.intersectsSphere(sphere);
-	};
-
-	Polygon.prototype.getCenter = function() {
-		return this.sphere.center;
-	};
-
-	window.Polygon = Polygon;
-}());
-(function(){
-	var Rectangle = function(x, y, width, height) {
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		this.ulx = x;
-		this.uly = y;
-		this.lrx = x+width;
-		this.lry = y+height;
-	};
-
-	Rectangle.prototype.update = function(x, y, width, height) {
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		this.ulx = x;
-		this.uly = y;
-		this.lrx = x+width;
-		this.lry = y+height;
-	};
-
-	Rectangle.prototype.containsPoint = function(x, y) {
-		return this.ulx<=x && x<=this.lrx && this.uly<=y && y<=this.lry;
-	};
-
-	Rectangle.prototype.containsRect = function(rect) {
-		return this.containsPoint(rect.x, rect.y) && 
-			this.containsPoint(rect.x+rect.width, rect.y+rect.height);
-	};
-
-	Rectangle.prototype.containsDimensions = function(width, height) {
-		return this.width >= width && this.height >= height;
-	};
-
-	Rectangle.prototype.getNormalizedRect = function(maxWidth, maxHeight) {
-		var x = this.x / maxWidth,
-			y = this.y / maxHeight,
-			width = this.width / maxWidth,
-			height = this.height / maxHeight;
-		return new Rectangle(x, y, width, height);
-	};
-
-	window.Rectangle = Rectangle;
-}());
-(function(){
 	var SpriteNode = function(rect) {
 		this.rect = rect;
 		this.name = "sprite0";
@@ -1258,6 +1098,168 @@ var carte = {};
 	window.WebGLView = WebGLView;
 }());
 (function(){
+	var Geom = function() {};
+
+	Geom.prototype.setStart = function(value) {
+		this.startIndex = value;
+	};
+
+	Geom.prototype.setEnd = function(value) {
+		this.endIndex = value;
+	};
+
+	Geom.prototype.containsIndex = function(value) {
+		return this.startIndex <= value && value <= this.endIndex;
+	};
+
+	window.Geom = Geom;
+}());
+(function(){
+	var Line = function(points, properties) {
+		this.points = points;
+		this.properties = properties;
+	};
+
+	Line.prototype = new Geom();
+	Line.prototype.constructor = Line;
+
+	window.Line = Line;
+}());
+(function(){
+	var MultiLine = function(lines, properties) {
+		this.lines = lines;
+		this.properties = properties;
+	};
+
+	MultiLine.prototype = new Geom();
+	MultiLine.prototype.constructor = MultiLine;
+
+	window.MultiLine = MultiLine;
+}());
+(function(){
+	var MultiPolygon = function(polygons, properties) {
+		this.polygons = polygons;
+		this.properties  =properties;
+	};
+
+	MultiPolygon.prototype = new Geom();
+	MultiPolygon.prototype.constructor = MultiPolygon;
+
+	MultiPolygon.prototype.computeBoundingSphere = function() {
+		if(!this.sphere) this.sphere = new THREE.Sphere();
+		var points = [];
+		for(var i=0; i<this.polygons.length; i++) {
+			var polygon = this.polygons[i];
+			if(polygon.rings.length > 0) {
+				var ring = polygon.rings[0];
+				for(var j=0; j<ring.length; j++) {
+					points.push(new THREE.Vector3(ring[j].point.x, ring[j].point.y, 0));
+				}
+			}
+		}
+		this.sphere.setFromPoints(points);
+	};
+
+	MultiPolygon.prototype.intersectsSphere = function(sphere) {
+		return this.sphere.intersectsSphere(sphere);
+	};
+
+	MultiPolygon.prototype.getCenter = function() {
+		return this.sphere.center;
+	};
+
+	window.MultiPolygon = MultiPolygon;
+}());
+(function(){
+	var Point = function(lat, lng, projection, properties) {
+		this.latLng = new google.maps.LatLng(lat, lng);
+		this.point = projection.fromLatLngToPoint(this.latLng);
+		this.properties = properties ? properties : {};
+		this.properties.latLng = this.latLng;
+		this.properties.point = this.point;
+	};
+
+	window.Point = Point;
+}());
+
+(function(){
+	var Polygon = function(rings, properties) {
+		this.rings = rings;
+		this.properties = properties;
+		this.sphere = new THREE.Sphere();
+	};
+
+	Polygon.prototype = new Geom();
+	Polygon.prototype.constructor = Polygon;
+
+	Polygon.prototype.computeBoundingSphere = function() {
+		if(this.rings.length > 0) {
+			var ring = this.rings[0];
+			var points = [];
+			for(var i=0; i<ring.length; i++) {
+				points.push(new THREE.Vector3(ring[i].point.x, ring[i].point.y, 0));
+			}
+			this.sphere.setFromPoints(points);
+		}
+	};
+
+	Polygon.prototype.intersectsSphere = function(sphere) {
+		return this.sphere.intersectsSphere(sphere);
+	};
+
+	Polygon.prototype.getCenter = function() {
+		return this.sphere.center;
+	};
+
+	window.Polygon = Polygon;
+}());
+(function(){
+	var Rectangle = function(x, y, width, height) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.ulx = x;
+		this.uly = y;
+		this.lrx = x+width;
+		this.lry = y+height;
+	};
+
+	Rectangle.prototype.update = function(x, y, width, height) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.ulx = x;
+		this.uly = y;
+		this.lrx = x+width;
+		this.lry = y+height;
+	};
+
+	Rectangle.prototype.containsPoint = function(x, y) {
+		return this.ulx<=x && x<=this.lrx && this.uly<=y && y<=this.lry;
+	};
+
+	Rectangle.prototype.containsRect = function(rect) {
+		return this.containsPoint(rect.x, rect.y) && 
+			this.containsPoint(rect.x+rect.width, rect.y+rect.height);
+	};
+
+	Rectangle.prototype.containsDimensions = function(width, height) {
+		return this.width >= width && this.height >= height;
+	};
+
+	Rectangle.prototype.getNormalizedRect = function(maxWidth, maxHeight) {
+		var x = this.x / maxWidth,
+			y = this.y / maxHeight,
+			width = this.width / maxWidth,
+			height = this.height / maxHeight;
+		return new Rectangle(x, y, width, height);
+	};
+
+	window.Rectangle = Rectangle;
+}());
+(function(){
 	var http = {};
 
 	http.get = function(url, options) {
@@ -1813,12 +1815,14 @@ var carte = {};
 	};
 
 	VectorTileView.prototype.showTiles = function(ulx, uly, lrx, lry, zoom) {
+		var promises = [];
 		for(var column=ulx; column<=lrx; column++) {
 			for(var row=uly; row<=lry; row++) {
-				this.showTile(column, row, zoom);
+				promises.push(this.showTile(column, row, zoom));
 			}
 		}
 		this.webGlView.draw();
+		return this.tileProvider.$q.all(promises);
 	};
 
 	VectorTileView.prototype.showTile = function(x, y, z) {
@@ -1827,6 +1831,7 @@ var carte = {};
 		if(this.shownTiles[url]) return;
 		this.shownTiles[url] = true;
 
+		var deferred = this.tileProvider.$q.defer();
 		if(this.tiles[url]) {
 			if(this.tiles[url].polygons || this.tiles[url].lines)
 				if(this.tiles[url].polygons)
@@ -1835,6 +1840,7 @@ var carte = {};
 					this.webGlView.addLine(this.tiles[url].lines);
 			else if(this.tiles[url].data) 
 				this.createFeatures(url, this.tiles[url].data);
+			deferred.resolve(url);
 		}else{
 			var self = this;
 			self.webServices.checkLayerTile(url)
@@ -1849,14 +1855,19 @@ var carte = {};
 									polygons[i].computeBoundingSphere();
 								if(self.shownTiles[url])
 									self.createFeatures(url, features);
+								deferred.resolve(url);
 							}, function(reason){
 								console.log(reason);
 							});
+					}else{
+						deferred.resolve(url);
 					}
 				}, function (reason) {
 					console.log(reason);
+					deferred.resolve(url);
 				});
 		}
+		return deferred.promise;
 	};
 
 	VectorTileView.prototype.hideTile = function(x, y, z) {
@@ -1941,7 +1952,7 @@ var carte = {};
 				color: {r:1, g:1, b:1},
 				image: this.iconImage,
 				imageName: this.iconImage.url,
-				site: p.properties
+				properties: p.properties
 			};
 			points.push(this.webGlView.addPoint(markerOptions));
 		}
@@ -2010,4 +2021,5 @@ var carte = {};
 
 	window.VectorTileView = VectorTileView;
 }());
+
 //# sourceMappingURL=carte.js.map

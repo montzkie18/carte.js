@@ -35,12 +35,14 @@
 	};
 
 	VectorTileView.prototype.showTiles = function(ulx, uly, lrx, lry, zoom) {
+		var promises = [];
 		for(var column=ulx; column<=lrx; column++) {
 			for(var row=uly; row<=lry; row++) {
-				this.showTile(column, row, zoom);
+				promises.push(this.showTile(column, row, zoom));
 			}
 		}
 		this.webGlView.draw();
+		return this.tileProvider.$q.all(promises);
 	};
 
 	VectorTileView.prototype.showTile = function(x, y, z) {
@@ -49,6 +51,7 @@
 		if(this.shownTiles[url]) return;
 		this.shownTiles[url] = true;
 
+		var deferred = this.tileProvider.$q.defer();
 		if(this.tiles[url]) {
 			if(this.tiles[url].polygons || this.tiles[url].lines)
 				if(this.tiles[url].polygons)
@@ -57,6 +60,7 @@
 					this.webGlView.addLine(this.tiles[url].lines);
 			else if(this.tiles[url].data) 
 				this.createFeatures(url, this.tiles[url].data);
+			deferred.resolve(url);
 		}else{
 			var self = this;
 			self.webServices.checkLayerTile(url)
@@ -71,14 +75,19 @@
 									polygons[i].computeBoundingSphere();
 								if(self.shownTiles[url])
 									self.createFeatures(url, features);
+								deferred.resolve(url);
 							}, function(reason){
 								console.log(reason);
 							});
+					}else{
+						deferred.resolve(url);
 					}
 				}, function (reason) {
 					console.log(reason);
+					deferred.resolve(url);
 				});
 		}
+		return deferred.promise;
 	};
 
 	VectorTileView.prototype.hideTile = function(x, y, z) {
@@ -163,7 +172,7 @@
 				color: {r:1, g:1, b:1},
 				image: this.iconImage,
 				imageName: this.iconImage.url,
-				site: p.properties
+				properties: p.properties
 			};
 			points.push(this.webGlView.addPoint(markerOptions));
 		}
