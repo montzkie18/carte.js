@@ -254,13 +254,13 @@
 
 	WebGLView.prototype.addMask = function(geometry) {
 		this.sceneMask.add(geometry.shape);
-		this.sceneMask.add(geometry.outline);
+		// this.sceneMask.add(geometry.outline);
 		this.numMasks+=1;
 	};
 
 	WebGLView.prototype.removeMask = function(geometry) {
 		this.sceneMask.remove(geometry.shape);
-		this.sceneMask.remove(geometry.outline);
+		// this.sceneMask.remove(geometry.outline);
 		this.numMasks-=1;
 	};
 
@@ -270,13 +270,14 @@
 	};
 
 	WebGLView.prototype.hitsMask = function(x, y) {
-		if(!this.raycaster)
-			this.raycaster = new THREE.Raycaster();
-		if(!this.mouse)
-			this.mouse = new THREE.Vector2();
+		if(!this.raycaster) this.raycaster = new THREE.Raycaster();
+		if(!this.mouse) this.mouse = new THREE.Vector3(0, 0, 1);
+		if(!this.direction) this.direction = new THREE.Vector3(0, 0, 1);
 		this.mouse.x = (x / this.width) * 2 - 1;
 		this.mouse.y = -(y / this.height) * 2 + 1;
-		this.raycaster.setFromCamera(this.mouse, this.camera);
+		this.mouse.z = 1;
+		this.mouse.unproject(this.camera);
+		this.raycaster.set(this.mouse, this.direction);
 		var intersections = this.raycaster.intersectObjects(this.sceneMask.children);
 		return intersections.length > 0;
 	};

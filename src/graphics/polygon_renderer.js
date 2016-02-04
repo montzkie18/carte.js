@@ -73,7 +73,7 @@
 				points.push(p.point.x);
 				points.push(p.point.y);
 
-				geometry.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 3990));
+				geometry.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 10));
 				outline.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
 
 				if(pointIndex == ring.length-1) {

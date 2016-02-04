@@ -23,8 +23,8 @@
 		this.strokeOpacity = options.strokeOpacity;
 		this.webServices = webServices;
 		this.raycaster = new THREE.Raycaster();
-		this.mouse = new THREE.Vector2();
-		this.mouse3D = new THREE.Vector3();
+		this.cameraDirection = new THREE.Vector3(0, 0, 1);
+		this.mouse3D = new THREE.Vector3(0, 0, 1);
 		this.mouseSphere = new THREE.Sphere();
 		this.tiles = {};
 		this.shownTiles = {};
@@ -70,9 +70,6 @@
 							.then(function(response){
 								self.tiles[url] = response;
 								var features = response.data;
-								var polygons = features.polygons;
-								for(var i=0; i<polygons.length; i++)
-									polygons[i].computeBoundingSphere();
 								if(self.shownTiles[url])
 									self.createFeatures(url, features);
 								deferred.resolve(url);
@@ -196,28 +193,21 @@
 			var tile = this.tiles[url];
 			var scale = 1/Math.pow(2, zoom);
 			// normalize screenX from -1 to 1
-			this.mouse.x = (screenX / this.webGlView.width) * 2 - 1;
+			this.mouse3D.x = (screenX / this.webGlView.width) * 2 - 1;
 			// normalize screenY from 1 to -1
-			this.mouse.y = -(screenY / this.webGlView.height) * 2 + 1;
+			this.mouse3D.y = -(screenY / this.webGlView.height) * 2 + 1;
+			this.mouse3D.z = 1;
+
+			// set mouse position in relation to camera
+			this.mouse3D.unproject(this.webGlView.camera);
 
 			this.raycaster.linePrecision = scale;
-			this.raycaster.setFromCamera(this.mouse, this.webGlView.camera);
+			this.raycaster.set(this.mouse3D, this.cameraDirection);
 
-			this.mouse3D.copy(this.raycaster.ray.origin);
-			this.mouse3D.setZ(0);
+			this.mouse3D.z = 0;
 			this.mouseSphere.set(this.mouse3D, scale);
 
-			// for the sample dataset that we're using, the polygons are too small at lower zoom levels
-			// that they can't be detected by raycast since triangles are too small for intersection.
-			// so we opted for a simple bounding sphere collision instead, but needs accuracy on higher zoom.
-
-			//!TODO: Activate boundingSphere collision dynamically if polygons are too small
-			// or just enable via an optional flag.
-			// if(sphereCollision) {
-				return getIntersectionFromSphere(this.mouseSphere, tile);
-			// }else{
-			// 	return getIntersectionFromRaycast(this.mouse, tile, this.raycaster);
-			// }
+			return getIntersectionFromRaycast(this.mouse, tile, this.raycaster);
 		}
 		return null;
 	};
@@ -235,9 +225,7 @@
 		var intersections = raycaster.intersectObject(tile.polygons.shape);
 		var intersection = (intersections.length) > 0 ? intersections[0] : null;
 		if(intersection) {
-			// the outline polygon has twice more vertices than our actual mesh
-			// so we divide the vertex index so we get the corresponding geometry we also hit
-			var index = (intersection instanceof THREE.LineSegments) ? intersection.index / 2 : intersection.index;
+			var index = intersection.face.a;
 			//!TODO: Perform binary search for performance!
 			for(var i=0; i<tile.data.polygons.length; i++) {
 				if(tile.data.polygons[i].containsIndex(index))
