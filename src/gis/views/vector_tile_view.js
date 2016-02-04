@@ -117,8 +117,16 @@
 		}
 	};
 
+	VectorTileView.prototype.deleteTile = function(x, y, z) {
+		this.hideTile(x, y, z);
+		var url = this.tileProvider.getTileUrl(x, y, z);
+		if(this.tiles[url]) delete this.tiles[url];
+		this.tileProvider.deleteTile(x, y, z);
+	};
+
 	VectorTileView.prototype.clear = function() {
-		for(var url in this.tiles) {
+		var url = "";
+		for(url in this.tiles) {
 			if(this.tiles[url].polygons) {
 				this.webGlView.removeGeometry(this.tiles[url].polygons);
 				delete this.tiles[url].polygons;
@@ -138,7 +146,7 @@
 				this.tiles[url].points = null;
 			}
 		}
-		for(var url in this.shownTiles) this.shownTiles[url] = false;
+		for(url in this.shownTiles) this.shownTiles[url] = false;
 		this.webGlView.draw();
 	};
 

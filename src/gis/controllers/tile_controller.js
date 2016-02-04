@@ -101,7 +101,7 @@
 		// Then set the range to update only the visible tiles.
 		if(this.hasChangedZoom(zoom)) {
 			// Make sure that all currently visible tiles will be hidden.
-			this.updateTiles(currentBounds, currentBounds, new Rectangle(-1, -1, 0, 0), this.zoom);
+			this.deleteTiles(currentBounds, currentBounds, new Rectangle(-1, -1, 0, 0), this.zoom);
 			// Then make sure that all tiles that should be visible will call showTile below.
 			currentBounds = new Rectangle(-1, -1, 0, 0);
 			// We only need to update all visible tiles below.
@@ -127,6 +127,22 @@
 						// Hide tile that is currently visible
 						if(currentBounds.containsPoint(column, row))
 							views[i].hideTile(column, row, zoom);
+					}
+				}
+			}
+			this.webGlView.draw();
+		}
+		this.zoom = zoom;
+		this.clampedBounds = visibleBounds;
+	};
+
+	TileController.prototype.deleteTiles = function(range, currentBounds, visibleBounds, zoom) {
+		var views = this.views;
+		for(var i=0; i<views.length; i++) {
+			for(var column=range.ulx; column<=range.lrx; column++) {
+				for(var row=range.uly; row<=range.lry; row++) {
+					if(!visibleBounds.containsPoint(column, row) && currentBounds.containsPoint(column, row)) {
+						views[i].deleteTile(column, row, zoom);
 					}
 				}
 			}

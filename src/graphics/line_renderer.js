@@ -42,14 +42,14 @@
 	};
 
 	function createLineVertices(obj, line) {
-		for(var pointIndex=0; j<obj.points.length; j++) {
+		for(var pointIndex=0; pointIndex<obj.points.length; pointIndex++) {
 			var p = obj.points[pointIndex];
 			line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
-			if(j == obj.points.length-1) {
+			if(pointIndex == obj.points.length-1) {
 				p = obj.points[0];
 				line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
 			}else{
-				p = obj.points[j+1];
+				p = obj.points[pointIndex+1];
 				line.vertices.push(new THREE.Vector3(p.point.x, p.point.y, 1));
 			}
 		}	

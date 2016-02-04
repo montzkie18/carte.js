@@ -28,5 +28,10 @@
 		return deferred.promise;
 	};
 
+	TileProvider.prototype.deleteTile = function(x, y, z) {
+		var url = this.getTileUrl(x, y, z);
+		if(this.tiles[url]) delete this.tiles[url];
+	};
+
 	window.TileProvider = TileProvider;
 }());
