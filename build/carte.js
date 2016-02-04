@@ -1212,11 +1212,11 @@ var carte = {};
 		this.scene.add(line);
 	};
 
-	WebGLView.removeLine = function(line) {
+	WebGLView.prototype.removeLine = function(line) {
 		this.scene.remove(line);
 	};
 
-	WebGLView.destroyLine = function(line) {
+	WebGLView.prototype.destroyLine = function(line) {
 		
 	};
 
