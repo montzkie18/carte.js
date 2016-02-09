@@ -68,13 +68,17 @@
 					if (response.data.is_tile_exist) {
 						self.tileProvider.getTile(x, y, z)
 							.then(function(response){
-								self.tiles[url] = response;
-								var features = response.data;
-								if(self.shownTiles[url])
-									self.createFeatures(url, features);
-								deferred.resolve(url);
+								if(!self.tiles[url]) {
+									self.tiles[url] = response;
+									var features = response.data;
+									if(self.shownTiles[url])
+										self.createFeatures(url, features);
+									deferred.resolve(url);
+								}else{
+									deferred.reject(url);
+								}
 							}, function(reason){
-								console.log(reason);
+								deferred.reject(url);
 							});
 					}else{
 						deferred.resolve(url);
