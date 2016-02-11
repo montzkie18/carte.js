@@ -1893,30 +1893,30 @@ var carte = {};
 			deferred.resolve(url);
 		}else{
 			var self = this;
-			self.webServices.checkLayerTile(url)
-				.then(function (response) {
-					if (response.data.is_tile_exist) {
-						self.tileProvider.getTile(x, y, z)
-							.then(function(response){
-								if(!self.tiles[url]) {
-									self.tiles[url] = response;
-									var features = response.data;
-									if(self.shownTiles[url])
-										self.createFeatures(url, features);
-									deferred.resolve(url);
-								}else{
-									deferred.reject(url);
-								}
-							}, function(reason){
+			self.checkLayerTileRequest = self.webServices.checkLayerTile(url);
+			self.checkLayerTileRequest.then(function (response) {
+				if (response.data.is_tile_exist) {
+					self.tileProvider.getTile(x, y, z)
+						.then(function(response){
+							if(!self.tiles[url]) {
+								self.tiles[url] = response;
+								var features = response.data;
+								if(self.shownTiles[url])
+									self.createFeatures(url, features);
+								deferred.resolve(url);
+							}else{
 								deferred.reject(url);
-							});
-					}else{
-						deferred.resolve(url);
-					}
-				}, function (reason) {
-					console.log(reason);
+							}
+						}, function(reason){
+							deferred.reject(url);
+						});
+				}else{
 					deferred.resolve(url);
-				});
+				}
+			}, function (reason) {
+				console.log(reason);
+				deferred.resolve(url);
+			});
 		}
 		return deferred.promise;
 	};
@@ -1945,6 +1945,11 @@ var carte = {};
 					this.webGlView.removePoint(points[i]);
 				this.tiles[url].points = null;
 			}
+		}
+
+		if(this.checkLayerTileRequest) {
+			this.checkLayerTileRequest.cancel();
+			this.checkLayerTileRequest = null;
 		}
 	};
 
