@@ -41,10 +41,10 @@
 			}
 		}else{
 			var self = this;
-			self.webServices.checkLayerTile(url)
+			/*self.webServices.checkLayerTile(url)
 				.then(function (response) {
 					//console.log('Response: ', response);
-					if (response.data.is_tile_exist) {
+					if (response.data.is_tile_exist) {*/
 						self.tileProvider.getTile(x, y, z)
 							.then(function(response){
 								self.tiles[url] = response;
@@ -64,10 +64,10 @@
 							}, function(reason){
 								//console.log(reason);
 							});
-					}
+			/*		}
 				}, function (reason) {
 					console.log(reason);
-				});
+				});*/
 		}
 	};
 
