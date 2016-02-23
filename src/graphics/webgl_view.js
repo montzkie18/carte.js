@@ -17,11 +17,13 @@
 		return props[0];
 	})();
 
-	var WebGLView = function() {
+	var WebGLView = function(map, options) {
+		this._map = map;
 		this.camera = new THREE.OrthographicCamera(0, 255, 0, 255, -3000, 3000);
 		this.camera.position.z = 1000;
 		this.scene = new THREE.Scene();
 		this.sceneMask = new THREE.Scene();
+		this.sceneForeground = new THREE.Scene();
 		this.renderer = new THREE.WebGLRenderer({
 			alpha: true,
 			antialiasing: true,
@@ -31,13 +33,20 @@
 		});
 		this.renderer.setPixelRatio(window.devicePixelRatio);
 		this.renderer.autoClear = false;
+		this.renderer.domElement.style["pointer-events"] = 'none';
 		this.context = this.renderer.context;
 		this.animationFrame = null;
 		this.objectRenderers = [];
 		this.numMasks = 0;
 
+		options = options ? options : {};
+		this.maskAlwaysEnabled = options.maskAlwaysEnabled;
+
 		this.update = function() {
 			var map = this.map;
+			var projection = this.getProjection();
+			if(!map || !projection) return;
+			
 			var bounds = map.getBounds();
 			var topLeft = new google.maps.LatLng(
 				bounds.getNorthEast().lat(),
@@ -46,7 +55,7 @@
 
 			// Translate the webgl canvas based on maps's bounds
 			var canvas = this.renderer.domElement;
-			var point = this.getProjection().fromLatLngToDivPixel(topLeft);
+			var point = projection.fromLatLngToDivPixel(topLeft);
 			canvas.style[CSS_TRANSFORM] = 'translate(' + Math.round(point.x) + 'px,' + Math.round(point.y) + 'px)';
 
 			// Resize the renderer / canvas based on size of the map
@@ -82,11 +91,14 @@
 			this.update();
 
 			var context = this.context, renderer = this.renderer;
-			var maskEnabled = this.numMasks > 0;
+			var maskEnabled = this.numMasks > 0 || this.maskAlwaysEnabled;
+
+			this.renderer.setClearColor(0xffffff, 0);
+			this.renderer.clear(true, true, true);
 
 			if(maskEnabled) {
-				context.colorMask( false, false, false, false );
-				context.depthMask( false );
+				context.colorMask(false, false, false, false);
+				context.depthMask(false);
 
 				context.enable(context.STENCIL_TEST);
 				context.stencilOp(context.REPLACE, context.REPLACE, context.REPLACE);
@@ -111,12 +123,19 @@
 				context.disable(context.STENCIL_TEST);
 			}
 
+			this.pointRenderer.draw();
+			this.renderer.render(this.sceneForeground, this.camera);
+
 			this.dispatchEvent({type: 'render'});
 		};
 	};
 
 	WebGLView.prototype = _.extend(new google.maps.OverlayView(), new THREE.EventDispatcher());
 	WebGLView.prototype.constructor = WebGLView;
+
+	WebGLView.prototype.getMap = function() {
+		return this._map;
+	};
 
 	WebGLView.prototype.onAdd = function() {
 		this.getPanes().overlayLayer.appendChild(this.renderer.domElement);
@@ -132,16 +151,20 @@
 	};
 
 	WebGLView.prototype.init = function() {
-		//!TODO: Remove dependency of PointRenderer from WebGLView
+		// draw all points in the foreground
 		this.pointRenderer = new PointRenderer(this).init();
-		this.scene.add(this.pointRenderer.sceneObject);
+		this.sceneForeground.add(this.pointRenderer.sceneObject);
+
+		// all these layers are maskable
 		this.spriteRenderer = new SpriteRenderer().init();
 		this.scene.add(this.spriteRenderer.sceneObject);
 		this.polygonRenderer = new PolygonRenderer().init();
-		// add them to an array so we can draw/update them all later
-		this.objectRenderers.push(this.pointRenderer);
+		this.lineRenderer = new LineRenderer().init();
+
+		// add all maskable layers to an array so we can draw/update them all later
 		this.objectRenderers.push(this.polygonRenderer);
 		this.objectRenderers.push(this.spriteRenderer);
+		this.objectRenderers.push(this.lineRenderer);
 		return this;
 	};
 
@@ -179,7 +202,7 @@
 	};
 
 	WebGLView.prototype.createGeometry = function(options) {
-		var geometry = this.polygonRenderer.create(options, this.scene);
+		var geometry = this.polygonRenderer.create(options);
 		if(geometry !== null) {
 			this.addGeometry(geometry);
 		}
@@ -201,30 +224,62 @@
 		delete geometry.outline;
 	};
 
+	WebGLView.prototype.createLine = function(options) {
+		var geometry = this.lineRenderer.create(options);
+		if(geometry !== null) {
+			this.addLine(geometry);
+		}
+		return geometry;
+	};
+
+	WebGLView.prototype.addLine = function(line) {
+		this.scene.add(line);
+	};
+
+	WebGLView.prototype.removeLine = function(line) {
+		this.scene.remove(line);
+	};
+
+	WebGLView.prototype.destroyLine = function(line) {
+		
+	};
+
 	WebGLView.prototype.createMask = function(options) {
 		var mask = this.polygonRenderer.create(options);
 		if(mask !== null) {
 			this.addMask(mask);
-			this.numMasks++;
 		}
 		return mask;
 	};
 
 	WebGLView.prototype.addMask = function(geometry) {
 		this.sceneMask.add(geometry.shape);
-		this.sceneMask.add(geometry.outline);
-		this.numMasks++;
+		// this.sceneMask.add(geometry.outline);
+		this.numMasks+=1;
 	};
 
 	WebGLView.prototype.removeMask = function(geometry) {
 		this.sceneMask.remove(geometry.shape);
-		this.sceneMask.remove(geometry.outline);
-		this.numMasks--;
+		// this.sceneMask.remove(geometry.outline);
+		this.numMasks-=1;
 	};
 
 	WebGLView.prototype.destroyMask = function(geometry) {
 		delete geometry.shape;
 		delete geometry.outline;
+	};
+
+	WebGLView.prototype.hitsMask = function(x, y) {
+		if(!this.raycaster) this.raycaster = new THREE.Raycaster();
+		if(!this.mouse) this.mouse = new THREE.Vector3(0, 0, 1);
+		if(!this.direction) this.direction = new THREE.Vector3(0, 0, 1);
+		this.mouse.x = (x / this.width) * 2 - 1;
+		this.mouse.y = -(y / this.height) * 2 + 1;
+		this.mouse.z = 1;
+		this.mouse.unproject(this.camera);
+		this.raycaster.set(this.mouse, this.direction);
+		var intersections = this.raycaster.intersectObjects(this.sceneMask.children);
+		return intersections.length > 0;
 	};
 
 	window.WebGLView = WebGLView;

@@ -93,8 +93,8 @@
 		this.context = this.canvas.getContext('2d');
 		
 		this.texture = new THREE.Texture(this.canvas);
-		this.texture.minFilter = THREE.NearestFilter;
-		this.texture.magFilter = THREE.NearestFilter;
+		this.texture.minFilter = THREE.LinearMipMapLinearFilter;
+		this.texture.magFilter = THREE.LinearFilter;
 		this.texture.flipY = false;
 
 		this.pnode = new SpriteNode(new Rectangle(0, 0, width, height));

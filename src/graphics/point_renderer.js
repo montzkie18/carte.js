@@ -1,30 +1,26 @@
 (function(){
-	var vshader = (function () {/*
-		uniform float pointSize;
-		attribute vec4 tile;
-		varying vec4 vTile;
-		varying vec3 vColor;
+	var vshader = "" +
+		"uniform float pointSize;" +
+		"attribute vec4 tile;" +
+		"varying vec4 vTile;" +
+		"varying vec3 vColor;" +
+		"void main() {" +
+		"	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);" +
+		"	gl_Position = projectionMatrix * mvPosition;" +
+		"	gl_PointSize = pointSize;" +
+		"	vTile = tile;" +
+		"	vColor = color;" +
+		"}";
 
-		void main() {
-			vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-			gl_Position = projectionMatrix * mvPosition;
-			gl_PointSize = pointSize;
-			vTile = tile;
-			vColor = color;
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
-
-	var fshader = (function () {/*
-		uniform sampler2D tex1;
-		uniform vec2 spriteSize;
-		varying vec4 vTile;
-		varying vec3 vColor;
-
-		void main() {
-			vec2 tileUV = vTile.xy + vTile.zw * gl_PointCoord;
-			gl_FragColor = texture2D(tex1, tileUV) * vec4(vColor.rgb, 1.0);
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+	var fshader = "" +
+		"uniform sampler2D tex1;" +
+		"uniform vec2 spriteSize;" +
+		"varying vec4 vTile;" +
+		"varying vec3 vColor;" +
+		"void main() {" +
+		"	vec2 tileUV = vTile.xy + vTile.zw * gl_PointCoord;" +
+		"	gl_FragColor = texture2D(tex1, tileUV) * vec4(vColor.rgb, 1.0);" +
+		"}";
 
 	var MAX_COUNT = Math.pow(2,32) - 1;
 	var START_VALUE = -99999.0;
@@ -48,17 +44,22 @@
 
 	PointRenderer.prototype.init = function() {
 		this.positions = new Float32Array(1000000 * 3);
-		this.positions.fill(START_VALUE);
+		if(typeof(this.positions.fill) == typeof(Function)){
+			this.positions.fill(START_VALUE);
+		} else {
+			for(var i=0; i<this.positions.length; i++)
+				this.positions[i] = START_VALUE;
+		}
 		this.positionsAttribute = new THREE.BufferAttribute(this.positions, 3);
-		this.positionsAttribute.setDynamic(true);
+		// this.positionsAttribute.setDynamic(true);
 
 		this.colors = new Float32Array(1000000 * 3);
 		this.colorsAttribute = new THREE.BufferAttribute(this.colors, 3);
-		this.colorsAttribute.setDynamic(true);
+		// this.colorsAttribute.setDynamic(true);
 
 		this.tiles = new Float32Array(1000000 * 4); 
 		this.tilesAttribute = new THREE.BufferAttribute(this.tiles, 4); 
-		this.tilesAttribute.setDynamic(true);
+		// this.tilesAttribute.setDynamic(true);
 
 		this.geometry = new THREE.BufferGeometry();
 		this.geometry.addAttribute('position', this.positionsAttribute);
@@ -80,15 +81,15 @@
 		});
 
 		this.sceneObject = new THREE.Points(this.geometry, this.material);
-		this.raycastObjects = [this.sceneObject];
 		this.addEventListeners();
 
 		return this;
 	};
 
 	PointRenderer.prototype.addEventListeners = function() {
-		document.addEventListener('mousemove', this.handleDocumentMouseMove.bind(this), false);
-		document.addEventListener('click', this.handleDocumentMouseClick.bind(this), false);
+		var map = this.webGlView.getMap();
+		google.maps.event.addListener(map, 'mousemove', this.handleDocumentMouseMove.bind(this));
+		google.maps.event.addListener(map, 'click', this.handleDocumentMouseClick.bind(this));
 	};
 
 	PointRenderer.prototype.handleDocumentMouseMove = function(event) {
@@ -147,6 +148,7 @@
 		this.minIndex = Math.min(this.minIndex, this.index);
 		this.maxIndex = Math.max(this.maxIndex, this.index);
 		var marker = this.markers[this.index] || this._createMarker(this.index);
+		marker.options = options;
 		this.index++;
 		return marker;
 	};
@@ -190,14 +192,19 @@
 	};
 
 	PointRenderer.prototype.update = function(event) {
-		this.mouse.x = (event.clientX / this.webGlView.width) * 2 - 1;
-		this.mouse.y = -(event.clientY / this.webGlView.height) * 2 + 1;
+		if(event.clientX !== undefined && event.clientY !== undefined) {
+			this.mouse.x = (event.clientX / this.webGlView.width) * 2 - 1;
+			this.mouse.y = -(event.clientY / this.webGlView.height) * 2 + 1;
+		}else if(event.pixel) {
+			this.mouse.x = (event.pixel.x / this.webGlView.width) * 2 - 1;
+			this.mouse.y = -(event.pixel.y / this.webGlView.height) * 2 + 1;
+		}
 
 		// check if we hit any of the points in the particle system
 		this.raycaster.params.Points.threshold = 16*1/Math.pow(2, this.webGlView.scale);
 		this.raycaster.setFromCamera(this.mouse, this.webGlView.camera);
-		var intersections = this.raycaster.intersectObjects(this.raycastObjects);
-		intersection = (intersections.length) > 0 ? intersections[0] : null;
+		var intersections = this.raycaster.intersectObject(this.sceneObject);
+		var intersection = (intersections.length) > 0 ? intersections[0] : null;
 
 		// we hit something
 		if(intersection) {
@@ -212,6 +219,8 @@
 				this.hoveredMarker = this.markers[intersection.index];
 				this.hoveredMarker.dispatchEvent({type: 'mouseover'});
 			}
+			if(this.webGlView && this.webGlView.map)
+				this.webGlView.map.setOptions({draggableCursor:'pointer'});
 		}
 		// there's nothing under the mouse
 		else {
@@ -219,6 +228,9 @@
 			if(this.hoveredMarker !== null) {
 				this.hoveredMarker.dispatchEvent({type: 'mouseout'});
 				this.hoveredMarker = null;
+				if(this.webGlView && this.webGlView.map) {
+					this.webGlView.map.setOptions({draggableCursor:null});
+				}
 			}
 		}
 	};

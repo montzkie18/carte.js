@@ -10,7 +10,7 @@ gulp.task('default', ['build-dev']);
 
 // configure the jshint task
 gulp.task('jshint', function() {
-  return gulp.src('src/*.js')
+  return gulp.src('src/**/*.js')
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish'));
 });
@@ -19,7 +19,7 @@ gulp.task('build-dev', function() {
   return gulp.src('src/**/*.js')
     .pipe(sourcemaps.init())
     .pipe(concat('carte.js'))
-    .pipe(sourcemaps.write())
+    .pipe(sourcemaps.write('./', {includeContent: false, sourceRoot: '../src'}))
     .pipe(gulp.dest('build'));
 });
 
@@ -28,12 +28,12 @@ gulp.task('build-prod', function() {
     .pipe(sourcemaps.init())
     .pipe(concat('carte.min.js'))
     .pipe(uglify()) 
-    .pipe(sourcemaps.write())
+    .pipe(sourcemaps.write('./', {includeContent: false, sourceRoot: '../src'}))
     .pipe(gulp.dest('build'));
 });
 
 // configure which files to watch and what tasks to use on file changes
 gulp.task('watch', function() {
-  gulp.watch('src/**/*.js', ['jshint', 'build-dev']);
+  gulp.watch('src/**/*.js', ['jshint', 'build-dev', 'build-prod']);
 });
 

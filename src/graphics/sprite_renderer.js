@@ -1,26 +1,24 @@
 (function(){
-	var vshader = (function () {/*
-		attribute vec4 tile;
-		varying vec2 vUv;
-		varying vec4 vTile;
-		void main() {
-			vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-			gl_Position = projectionMatrix * mvPosition;
-			vUv = uv;
-			vTile = tile;
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+	var vshader = "" +
+		"attribute vec4 tile;" +
+		"varying vec2 vUv;" +
+		"varying vec4 vTile;" +
+		"void main() {" +
+		"	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);" +
+		"	gl_Position = projectionMatrix * mvPosition;" +
+		"	vUv = uv;" +
+		"	vTile = tile;" +
+		"}";
 
-	var fshader = (function () {/*
-		uniform sampler2D tex1;
-		uniform float alpha;
-		varying vec2 vUv;
-		varying vec4 vTile;
-		void main() {
-			vec2 uv = vTile.xy + vTile.zw * vUv;
-			gl_FragColor = texture2D(tex1, uv) * vec4(1, 1, 1, alpha);
-		}
-	*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+	var fshader = "" +
+		"uniform sampler2D tex1;" +
+		"uniform float alpha;" +
+		"varying vec2 vUv;" +
+		"varying vec4 vTile;" +
+		"void main() {" +
+		"	vec2 uv = vTile.xy + vTile.zw * vUv;" +
+		"	gl_FragColor = texture2D(tex1, uv) * vec4(1, 1, 1, alpha);" +
+		"}";
 
 	var MAX_COUNT = Math.pow(2,32) - 1;
 	var START_VALUE = -99999.0;
@@ -40,21 +38,26 @@
 
 	SpriteRenderer.prototype.init = function() {
 		this.positions = new Float32Array(1024*POSITION_INTERVAL); 
-		this.positions.fill(START_VALUE);
+		if(typeof(this.positions.fill) == typeof(Function)){
+			this.positions.fill(START_VALUE);
+		} else {
+			for(var i=0; i<this.positions.length; i++)
+				this.positions[i] = START_VALUE;
+		}
 		this.positionsAttribute = new THREE.BufferAttribute(this.positions, 3);
-		this.positionsAttribute.setDynamic(true);
+		// this.positionsAttribute.setDynamic(true);
 
 		this.indices = new Uint16Array(1024*INDEX_INTERVAL); 
 		this.indicesAttribute = new THREE.BufferAttribute(this.indices, 1);
-		this.indicesAttribute.setDynamic(true);
+		// this.indicesAttribute.setDynamic(true);
 
 		this.uv = new Float32Array(1024*UV_INTERVAL); 
 		this.uvAttribute = new THREE.BufferAttribute(this.uv, 2); 
-		this.uvAttribute.setDynamic(true);
+		// this.uvAttribute.setDynamic(true);
 
 		this.tiles = new Float32Array(1024*TILE_INTERVAL); 
 		this.tilesAttribute = new THREE.BufferAttribute(this.tiles, 4); 
-		this.tilesAttribute.setDynamic(true);
+		// this.tilesAttribute.setDynamic(true);
 
 		this.geometry = new THREE.BufferGeometry();
 		this.geometry.setIndex(this.indicesAttribute);

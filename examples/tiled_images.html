@@ -47,7 +47,7 @@
 
 			(function(){
 				var map = createMap("map");
-				var webGlView = new WebGLView().init();
+				var webGlView = new WebGLView(map).init();
 				var tileController = new TileController(webGlView);
 				
 				google.maps.event.addListenerOnce(map, "projection_changed", function(){

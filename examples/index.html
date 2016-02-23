@@ -56,7 +56,7 @@
 
 			(function(){
 				var map = createMap("map");
-				var webGlView = new WebGLView().init();
+				var webGlView = new WebGLView(map).init();
 				var tileController = new TileController(webGlView);
 				var sites = [];
 				var polygons = null;
@@ -95,7 +95,13 @@
 						// sample tiled vectors
 						var vectorSource = new GeoJSONDataSource("sample_data/tiles/geom", projection);
 						var vectorProvider = new TileProvider(vectorSource, http, Q);
-						rasters = new VectorTileView(vectorProvider, webGlView, true);
+						var vectorLayerOptions = {
+							fillColor: 0x0000FF,
+							fillOpacity: 0.25,
+							strokeColor: 0xFFFFFF,
+							strokeOpacity: 0.25
+						};
+						rasters = new VectorTileView(vectorProvider, webGlView, vectorLayerOptions);
 						tileController.addView(rasters);
 
 						// start updating tiles and webglview
