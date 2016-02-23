@@ -1756,10 +1756,10 @@ var carte = {};
 			}
 		}else{
 			var self = this;
-			self.webServices.checkLayerTile(url)
+			/*self.webServices.checkLayerTile(url)
 				.then(function (response) {
 					//console.log('Response: ', response);
-					if (response.data.is_tile_exist) {
+					if (response.data.is_tile_exist) {*/
 						self.tileProvider.getTile(x, y, z)
 							.then(function(response){
 								self.tiles[url] = response;
@@ -1779,10 +1779,10 @@ var carte = {};
 							}, function(reason){
 								//console.log(reason);
 							});
-					}
+			/*		}
 				}, function (reason) {
 					console.log(reason);
-				});
+				});*/
 		}
 	};
 
@@ -1893,9 +1893,9 @@ var carte = {};
 			deferred.resolve(url);
 		}else{
 			var self = this;
-			self.checkLayerTileRequest = self.webServices.checkLayerTile(url);
+			/*self.checkLayerTileRequest = self.webServices.checkLayerTile(url);
 			self.checkLayerTileRequest.then(function (response) {
-				if (response.data.is_tile_exist) {
+				if (response.data.is_tile_exist) {*/
 					self.tileProvider.getTile(x, y, z)
 						.then(function(response){
 							if(!self.tiles[url]) {
@@ -1910,13 +1910,13 @@ var carte = {};
 						}, function(reason){
 							deferred.reject(url);
 						});
-				}else{
+			/*	}else{
 					deferred.resolve(url);
 				}
 			}, function (reason) {
 				console.log(reason);
 				deferred.resolve(url);
-			});
+			});*/
 		}
 		return deferred.promise;
 	};
@@ -2076,5 +2076,4 @@ var carte = {};
 
 	window.VectorTileView = VectorTileView;
 }());
-
 //# sourceMappingURL=carte.js.map
